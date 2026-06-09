@@ -1,0 +1,384 @@
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useVehicles } from '../context/VehicleContext';
+import { COLORS } from '../theme/colors';
+import { Card } from '../components/Card';
+import { ExpenseCategory } from '../types';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+export const AnalyticsScreen: React.FC = () => {
+  const { selectedVehicle, expenses } = useVehicles();
+
+  // Filter expenses for selected vehicle
+  const vehicleExpenses = useMemo(() => {
+    if (!selectedVehicle) return [];
+    return expenses.filter(e => e.vehicleId === selectedVehicle.id);
+  }, [expenses, selectedVehicle]);
+
+  // 1. Calculate Monthly Trend (Last 6 Months)
+  const monthlyTrendData = useMemo(() => {
+    const data: { monthLabel: string; amount: number }[] = [];
+    const today = new Date();
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const prefix = `${year}-${month}`; // "YYYY-MM"
+      
+      const label = d.toLocaleDateString('tr-TR', { month: 'short' });
+      
+      const sum = vehicleExpenses
+        .filter(e => e.date.startsWith(prefix))
+        .reduce((acc, curr) => acc + curr.amount, 0);
+
+      data.push({ monthLabel: label, amount: sum });
+    }
+
+    return data;
+  }, [vehicleExpenses]);
+
+  // Max value for scaling monthly bars
+  const maxMonthlyAmount = useMemo(() => {
+    const max = Math.max(...monthlyTrendData.map(d => d.amount));
+    return max > 0 ? max : 1000; // avoid division by 0
+  }, [monthlyTrendData]);
+
+  // 2. Calculate Category Breakdown
+  const categoryData = useMemo(() => {
+    const total = vehicleExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const breakdown: { [key in ExpenseCategory]?: number } = {};
+    
+    vehicleExpenses.forEach(e => {
+      breakdown[e.category] = (breakdown[e.category] || 0) + e.amount;
+    });
+
+    const categoriesList: { type: ExpenseCategory; label: string; icon: string; color: string }[] = [
+      { type: 'fuel', label: 'Akaryakıt', icon: 'speedometer-outline', color: COLORS.primary },
+      { type: 'maintenance', label: 'Bakım/Onarım', icon: 'construct-outline', color: COLORS.info },
+      { type: 'insurance', label: 'Sigorta/Kasko', icon: 'shield-checkmark-outline', color: '#8B5CF6' },
+      { type: 'tax', label: 'Vergi/Harç', icon: 'receipt-outline', color: '#EC4899' },
+      { type: 'wash', label: 'Temizlik/Yıkama', icon: '#10B981', color: '#10B981' },
+      { type: 'other', label: 'Diğer', icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary },
+    ];
+
+    return categoriesList
+      .map(cat => {
+        const amount = breakdown[cat.type] || 0;
+        const percentage = total > 0 ? (amount / total) * 100 : 0;
+        return {
+          ...cat,
+          amount,
+          percentage,
+        };
+      })
+      .filter(c => c.amount > 0) // Only show categories with expenses
+      .sort((a, b) => b.amount - a.amount); // Sort by highest spend
+  }, [vehicleExpenses]);
+
+  // 3. Stats Summary
+  const analyticsSummary = useMemo(() => {
+    if (vehicleExpenses.length === 0) return { total: 0, avg: 0, highest: '-' };
+    const total = vehicleExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const avg = total / 6; // Average of last 6 months
+    
+    const highestCat = categoryData.length > 0 ? categoryData[0].label : '-';
+
+    return { total, avg, highest: highestCat };
+  }, [vehicleExpenses, categoryData]);
+
+  if (!selectedVehicle) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="analytics-outline" size={72} color={COLORS.textMuted} />
+        <Text style={styles.emptyText}>Grafikleri görüntülemek için aktif bir aracınızın olması gerekir.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Analizler</Text>
+        <Text style={styles.subtitle}>{selectedVehicle.name} - Masraf Analizi</Text>
+      </View>
+
+      {vehicleExpenses.length === 0 ? (
+        <Card style={styles.noDataCard}>
+          <Ionicons name="bar-chart-outline" size={56} color={COLORS.textMuted} style={{ marginBottom: 12 }} />
+          <Text style={styles.noDataTitle}>Yeterli Veri Yok</Text>
+          <Text style={styles.noDataDesc}>
+            Harcamalarınızı grafik üzerinde görebilmek için en az bir masraf kaydı eklemeniz gerekmektedir.
+          </Text>
+        </Card>
+      ) : (
+        <>
+          {/* Quick Stats Grid */}
+          <View style={styles.summaryGrid}>
+            <Card style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Aylık Ortalama</Text>
+              <Text style={styles.summaryValue}>₺{analyticsSummary.avg.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</Text>
+              <Text style={styles.summarySub}>Son 6 Ay Ort.</Text>
+            </Card>
+            <Card style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>En Yüksek Gider</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.primary }]} numberOfLines={1}>
+                {analyticsSummary.highest}
+              </Text>
+              <Text style={styles.summarySub}>Kategori Bazlı</Text>
+            </Card>
+          </View>
+
+          {/* Monthly Trend Chart */}
+          <Card style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Aylık Trend (Son 6 Ay)</Text>
+            <View style={styles.chartContainer}>
+              <View style={styles.barsContainer}>
+                {monthlyTrendData.map((d, index) => {
+                  const barHeight = (d.amount / maxMonthlyAmount) * 120; // max height 120
+                  return (
+                    <View key={index} style={styles.barColumn}>
+                      <View style={styles.barValueWrapper}>
+                        {d.amount > 0 && (
+                          <Text style={styles.barValueText}>
+                            {d.amount > 999 ? `${(d.amount / 1000).toFixed(1)}k` : d.amount.toFixed(0)}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={[styles.barBack]}>
+                        <View style={[styles.barFill, { height: Math.max(barHeight, 4), backgroundColor: COLORS.primary }]} />
+                      </View>
+                      <Text style={styles.barLabel}>{d.monthLabel}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </Card>
+
+          {/* Category Distribution Chart */}
+          <Card style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Kategori Dağılımı</Text>
+            <View style={styles.breakdownList}>
+              {categoryData.map(cat => (
+                <View key={cat.type} style={styles.breakdownRow}>
+                  <View style={styles.breakdownLabelRow}>
+                    <View style={styles.categoryInfo}>
+                      <View style={[styles.catIconBox, { backgroundColor: cat.color + '15' }]}>
+                        <Ionicons name={cat.icon as any} size={16} color={cat.color} />
+                      </View>
+                      <Text style={styles.catName}>{cat.label}</Text>
+                    </View>
+                    <View style={styles.categoryValues}>
+                      <Text style={styles.catAmount}>₺{cat.amount.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</Text>
+                      <Text style={styles.catPercent}>%{cat.percentage.toFixed(0)}</Text>
+                    </View>
+                  </View>
+                  {/* Progress Bar */}
+                  <View style={styles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: `${cat.percentage}%`, backgroundColor: cat.color }]} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Card>
+        </>
+      )}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  summaryCard: {
+    width: '48%',
+    padding: 14,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  summarySub: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+  },
+  chartCard: {
+    marginBottom: 20,
+    padding: 16,
+  },
+  chartTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginBottom: 20,
+    letterSpacing: 0.3,
+  },
+  chartContainer: {
+    height: 170,
+    justifyContent: 'flex-end',
+    paddingBottom: 10,
+  },
+  barsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    height: 150,
+  },
+  barColumn: {
+    alignItems: 'center',
+    width: 44,
+  },
+  barValueWrapper: {
+    height: 20,
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  barValueText: {
+    fontSize: 9,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  barBack: {
+    height: 120,
+    width: 14,
+    backgroundColor: '#0F172A',
+    borderRadius: 7,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '100%',
+    borderRadius: 7,
+  },
+  barLabel: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  breakdownList: {
+    marginTop: 4,
+  },
+  breakdownRow: {
+    marginBottom: 16,
+  },
+  breakdownLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  categoryInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  catIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  catName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  categoryValues: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  catAmount: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginRight: 8,
+  },
+  catPercent: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    width: 28,
+    textAlign: 'right',
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: '#0F172A',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  emptyContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  emptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 16,
+  },
+  noDataCard: {
+    padding: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  noDataDesc: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+});

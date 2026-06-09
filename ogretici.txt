@@ -1,0 +1,30 @@
+# REACT NATIVE ÖĞRETİCİ (FLUTTER GELİŞTİRİCİSİ GÖZÜNDEN)
+
+## Ders 1: Temel Kavramsal Farklar (Flutter vs React Native)
+1. Dil: Flutter'da Dart kullanılır. React Native'de JavaScript veya TypeScript (tercihen) kullanılır.
+2. Render (Çizim): Flutter kendi çizim motoruyla (Impeller/Skia) ekrana pikselleri kendi çizer. React Native ise yazdığınız bileşenleri (Components) cihazın kendi yerel (Native) UI elemanlarına (Android: View, iOS: UIView) dönüştürür.
+3. Başlangıç (Expo vs CLI): Flutter projesi açar gibi hızlı ve sorunsuz başlamak için React Native dünyasında "Expo" kullanılır. Expo, yerel kod yazmadan veya Gradle/CocoaPods ile uğraşmadan hızlıca uygulama geliştirmeyi sağlar (Flutter'daki hazır SDK yapısı gibi).
+
+## Ders 2: Expo Proje Yapısı (Flutter Karşılaştırmalı)
+1. `App.tsx` / `index.tsx`: Uygulamanın giriş noktasıdır. Flutter'daki `main.dart` dosyasına denk gelir.
+2. `package.json`: Projenin bağımlılıklarını ve çalıştırılabilir komutlarını (scripts) tutar. Flutter'daki `pubspec.yaml` dosyası gibidir.
+3. `assets/`: Resim, yazı tipi (fonts) gibi medya dosyalarının tutulduğu yerdir. Flutter'daki `assets/` tanımlamalarına benzer ama pubspec gibi her dosyayı tek tek kaydetmek gerekmez, JS/TS içinde doğrudan `require('./assets/image.png')` şeklinde import edilir.
+4. `node_modules/`: Paketlerin indirildiği klasördür. Flutter'daki `.dart_tool/pub/` önbelleği gibidir ama proje dizini içinde yer alır. Git'e asla eklenmez.
+
+## Ders 4: Expo SDK ve Sürüm Uyuşmazlıkları
+1. Expo Go, telefonunuzda çalışan bir "konteyner" uygulamadır. Her Expo Go sürümü sadece belirli Expo SDK sürümlerini (örneğin SDK 50, 51, 52 gibi) çalıştırabilir.
+2. Eğer projenin `package.json` dosyasındaki `expo` sürümü, telefonunuzdaki Expo Go uygulamasının desteklediği sürümlerden daha yeniyse "This project requires a newer version of Expo Go" hatası alırsınız.
+3. Çözüm: Telefonunuzdaki Expo Go uygulamasının giriş ekranındaki "Supports SDK..." kısmında yazan sürümü öğrenip projedeki Expo sürümünü ona düşürmek (downgrade) veya yükseltmektir. `npx expo install expo@51.0.0` gibi komutlarla proje sürümü değiştirilebilir.
+
+## Ders 5: State Yönetimi (Flutter StatefulWidget vs RN Hooks)
+1. Flutter'da durum yönetmek için `StatefulWidget` oluşturup `setState(() { ... })` kullanırız.
+2. React Native'de (modern React'te) artık sınıf (class) kullanılmaz, her şey fonksiyonel bileşendir (Functional Components). State yönetmek için `useState` hook'u kullanılır:
+   `const [counter, setCounter] = useState(0);`
+   Burada `counter` değişkeni (getter), `setCounter` ise bu değeri güncelleyen fonksiyondur (setter).
+3. Yaşam döngüsü (Lifecycle - initState, dispose): Flutter'daki bu yapıların yerine React Native'de `useEffect` hook'u kullanılır:
+   - `useEffect(() => { ... }, [])` -> Boş dizi verilirse, bileşen ilk ekrana çizildiğinde çalışır (`initState` gibi).
+   - `useEffect(() => { ... }, [counter])` -> Diziye `counter` verilirse, o her değiştiğinde bu fonksiyon tetiklenir (`didUpdateWidget` gibi).
+   - `useEffect(() => { return () => { ... } }, [])` -> `return` edilen fonksiyon bileşen ekrandan kaldırılırken tetiklenir (`dispose` gibi).
+
+
+
