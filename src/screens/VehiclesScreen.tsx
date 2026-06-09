@@ -7,6 +7,7 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
+import { t } from '../localization/i18n';
 
 export const VehiclesScreen: React.FC = () => {
   const { vehicles, selectedVehicleId, selectVehicle, addVehicle, deleteVehicle } = useVehicles();
@@ -22,10 +23,10 @@ export const VehiclesScreen: React.FC = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const iconOptions = [
-    { name: 'car', label: 'Otomobil' },
-    { name: 'bicycle', label: 'Motosiklet' },
-    { name: 'bus', label: 'Otobüs' },
-    { name: 'boat', label: 'Tekne' },
+    { name: 'car', label: t('v_type_car') },
+    { name: 'bicycle', label: t('v_type_motorcycle') },
+    { name: 'bus', label: t('v_type_bus') },
+    { name: 'boat', label: t('v_type_boat') },
   ];
 
   const handleSelectVehicle = (id: string) => {
@@ -35,12 +36,12 @@ export const VehiclesScreen: React.FC = () => {
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!name.trim()) newErrors.name = 'Araç adı boş bırakılamaz';
+    if (!name.trim()) newErrors.name = t('v_error_name');
     if (!odometer.trim() || isNaN(Number(odometer)) || Number(odometer) < 0) {
-      newErrors.odometer = 'Geçerli bir kilometre giriniz';
+      newErrors.odometer = t('exp_error_odometer');
     }
     if (year.trim() && (isNaN(Number(year)) || Number(year) < 1900 || Number(year) > 2030)) {
-      newErrors.year = 'Geçerli bir yıl giriniz';
+      newErrors.year = t('v_error_year');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -73,12 +74,12 @@ export const VehiclesScreen: React.FC = () => {
   const handleDelete = (id: string, vehicleName: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
-      'Aracı Sil',
-      `"${vehicleName}" aracını ve buna ait tüm masraf verilerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`,
+      t('v_delete_confirm_title'),
+      t('v_delete_confirm_desc'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Evet, Sil',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             await deleteVehicle(id);
@@ -92,7 +93,7 @@ export const VehiclesScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Araçlarım</Text>
+        <Text style={styles.title}>{t('v_title')}</Text>
         {!showAddForm && vehicles.length > 0 && (
           <TouchableOpacity
             style={styles.addButton}
@@ -102,7 +103,7 @@ export const VehiclesScreen: React.FC = () => {
             }}
           >
             <Ionicons name="add" size={24} color={COLORS.primary} />
-            <Text style={styles.addButtonText}>Yeni Ekle</Text>
+            <Text style={styles.addButtonText}>{t('add')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -111,7 +112,7 @@ export const VehiclesScreen: React.FC = () => {
         <Card style={styles.formCard}>
           <View style={styles.formHeader}>
             <Text style={styles.formTitle}>
-              {vehicles.length === 0 ? 'İlk Aracınızı Ekleyin' : 'Yeni Araç Ekle'}
+              {vehicles.length === 0 ? t('v_add_first') : t('v_add_new')}
             </Text>
             {vehicles.length > 0 && (
               <TouchableOpacity
@@ -126,8 +127,8 @@ export const VehiclesScreen: React.FC = () => {
           </View>
 
           <Input
-            label="Araç Marka / Model *"
-            placeholder="Örn: Volkswagen Golf"
+            label={`${t('v_name')} *`}
+            placeholder={t('v_name_example')}
             value={name}
             onChangeText={setName}
             error={errors.name}
@@ -135,15 +136,15 @@ export const VehiclesScreen: React.FC = () => {
 
           <View style={styles.row}>
             <Input
-              label="Plaka (Opsiyonel)"
-              placeholder="Örn: 34 ABC 123"
+              label={t('v_plate_optional')}
+              placeholder={t('v_plate_example')}
               value={plate}
               onChangeText={setPlate}
               style={{ flex: 1, marginRight: 12 }}
             />
             <Input
-              label="Model Yılı (Opsiyonel)"
-              placeholder="Örn: 2019"
+              label={t('v_year_optional')}
+              placeholder="YYYY"
               value={year}
               onChangeText={setYear}
               keyboardType="numeric"
@@ -154,8 +155,8 @@ export const VehiclesScreen: React.FC = () => {
           </View>
 
           <Input
-            label="Başlangıç Kilometresi (KM) *"
-            placeholder="Örn: 94000"
+            label={`${t('v_initial_odometer')} (KM) *`}
+            placeholder="0"
             value={odometer}
             onChangeText={setOdometer}
             keyboardType="numeric"
@@ -163,7 +164,7 @@ export const VehiclesScreen: React.FC = () => {
           />
 
           {/* Icon Selection */}
-          <Text style={styles.sectionLabel}>Araç Tipi</Text>
+          <Text style={styles.sectionLabel}>{t('v_type')}</Text>
           <View style={styles.iconContainer}>
             {iconOptions.map(option => (
               <TouchableOpacity
@@ -195,7 +196,7 @@ export const VehiclesScreen: React.FC = () => {
           </View>
 
           {/* Color Selection */}
-          <Text style={styles.sectionLabel}>Renk Teması</Text>
+          <Text style={styles.sectionLabel}>{t('v_color_theme')}</Text>
           <View style={styles.colorContainer}>
             {COLORS.vehicleColors.map(color => (
               <TouchableOpacity
@@ -214,7 +215,7 @@ export const VehiclesScreen: React.FC = () => {
           </View>
 
           <Button
-            title="Aracı Kaydet"
+            title={t('v_save')}
             onPress={handleAddVehicle}
             style={styles.submitBtn}
           />
@@ -240,14 +241,14 @@ export const VehiclesScreen: React.FC = () => {
                     <Text style={styles.vehicleName}>{vehicle.name}</Text>
                     {vehicle.plate && <Text style={styles.vehiclePlate}>{vehicle.plate}</Text>}
                     <Text style={styles.vehicleOdo}>
-                      Kilometre: {vehicle.currentOdometer.toLocaleString('tr-TR')} KM
+                      {t('exp_odometer')}: {vehicle.currentOdometer.toLocaleString()} KM
                     </Text>
                   </View>
                 </View>
                 <View style={styles.cardRight}>
                   {isSelected ? (
                     <View style={[styles.statusBadge, { backgroundColor: vehicle.color + '30' }]}>
-                      <Text style={[styles.statusText, { color: vehicle.color }]}>Aktif</Text>
+                      <Text style={[styles.statusText, { color: vehicle.color }]}>{t('v_status_active')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity

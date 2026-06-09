@@ -5,6 +5,7 @@ import { useVehicles } from '../context/VehicleContext';
 import { COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { ExpenseCategory } from '../types';
+import { t, getCurrencySymbol } from '../localization/i18n';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -28,7 +29,7 @@ export const AnalyticsScreen: React.FC = () => {
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const prefix = `${year}-${month}`; // "YYYY-MM"
       
-      const label = d.toLocaleDateString('tr-TR', { month: 'short' });
+      const label = d.toLocaleDateString(undefined, { month: 'short' });
       
       const sum = vehicleExpenses
         .filter(e => e.date.startsWith(prefix))
@@ -56,12 +57,12 @@ export const AnalyticsScreen: React.FC = () => {
     });
 
     const categoriesList: { type: ExpenseCategory; label: string; icon: string; color: string }[] = [
-      { type: 'fuel', label: 'Akaryakıt', icon: 'speedometer-outline', color: COLORS.primary },
-      { type: 'maintenance', label: 'Bakım/Onarım', icon: 'construct-outline', color: COLORS.info },
-      { type: 'insurance', label: 'Sigorta/Kasko', icon: 'shield-checkmark-outline', color: '#8B5CF6' },
-      { type: 'tax', label: 'Vergi/Harç', icon: 'receipt-outline', color: '#EC4899' },
-      { type: 'wash', label: 'Temizlik/Yıkama', icon: '#10B981', color: '#10B981' },
-      { type: 'other', label: 'Diğer', icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary },
+      { type: 'fuel', label: t('cat_fuel'), icon: 'speedometer-outline', color: COLORS.primary },
+      { type: 'maintenance', label: t('cat_maintenance'), icon: 'construct-outline', color: COLORS.info },
+      { type: 'insurance', label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' },
+      { type: 'tax', label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' },
+      { type: 'wash', label: t('cat_wash'), icon: 'water-outline', color: '#10B981' },
+      { type: 'other', label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary },
     ];
 
     return categoriesList
@@ -93,7 +94,7 @@ export const AnalyticsScreen: React.FC = () => {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="analytics-outline" size={72} color={COLORS.textMuted} />
-        <Text style={styles.emptyText}>Grafikleri görüntülemek için aktif bir aracınızın olması gerekir.</Text>
+        <Text style={styles.emptyText}>{t('an_no_vehicle')}</Text>
       </View>
     );
   }
@@ -101,16 +102,16 @@ export const AnalyticsScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Analizler</Text>
-        <Text style={styles.subtitle}>{selectedVehicle.name} - Masraf Analizi</Text>
+        <Text style={styles.title}>{t('an_title')}</Text>
+        <Text style={styles.subtitle}>{t('an_header_desc', { name: selectedVehicle.name })}</Text>
       </View>
 
       {vehicleExpenses.length === 0 ? (
         <Card style={styles.noDataCard}>
           <Ionicons name="bar-chart-outline" size={56} color={COLORS.textMuted} style={{ marginBottom: 12 }} />
-          <Text style={styles.noDataTitle}>Yeterli Veri Yok</Text>
+          <Text style={styles.noDataTitle}>{t('an_no_data')}</Text>
           <Text style={styles.noDataDesc}>
-            Harcamalarınızı grafik üzerinde görebilmek için en az bir masraf kaydı eklemeniz gerekmektedir.
+            {t('an_no_data_desc')}
           </Text>
         </Card>
       ) : (
@@ -118,22 +119,24 @@ export const AnalyticsScreen: React.FC = () => {
           {/* Quick Stats Grid */}
           <View style={styles.summaryGrid}>
             <Card style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Aylık Ortalama</Text>
-              <Text style={styles.summaryValue}>₺{analyticsSummary.avg.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</Text>
-              <Text style={styles.summarySub}>Son 6 Ay Ort.</Text>
+              <Text style={styles.summaryLabel}>{t('an_monthly_average')}</Text>
+              <Text style={styles.summaryValue}>
+                {getCurrencySymbol()}{analyticsSummary.avg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </Text>
+              <Text style={styles.summarySub}>{t('an_last_6_months')}</Text>
             </Card>
             <Card style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>En Yüksek Gider</Text>
+              <Text style={styles.summaryLabel}>{t('an_most_spent')}</Text>
               <Text style={[styles.summaryValue, { color: COLORS.primary }]} numberOfLines={1}>
                 {analyticsSummary.highest}
               </Text>
-              <Text style={styles.summarySub}>Kategori Bazlı</Text>
+              <Text style={styles.summarySub}>{t('an_category_based')}</Text>
             </Card>
           </View>
 
           {/* Monthly Trend Chart */}
           <Card style={styles.chartCard}>
-            <Text style={styles.chartTitle}>Aylık Trend (Son 6 Ay)</Text>
+            <Text style={styles.chartTitle}>{t('an_monthly_trend')}</Text>
             <View style={styles.chartContainer}>
               <View style={styles.barsContainer}>
                 {monthlyTrendData.map((d, index) => {
@@ -160,7 +163,7 @@ export const AnalyticsScreen: React.FC = () => {
 
           {/* Category Distribution Chart */}
           <Card style={styles.chartCard}>
-            <Text style={styles.chartTitle}>Kategori Dağılımı</Text>
+            <Text style={styles.chartTitle}>{t('an_category_breakdown')}</Text>
             <View style={styles.breakdownList}>
               {categoryData.map(cat => (
                 <View key={cat.type} style={styles.breakdownRow}>
@@ -172,8 +175,12 @@ export const AnalyticsScreen: React.FC = () => {
                       <Text style={styles.catName}>{cat.label}</Text>
                     </View>
                     <View style={styles.categoryValues}>
-                      <Text style={styles.catAmount}>₺{cat.amount.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}</Text>
-                      <Text style={styles.catPercent}>%{cat.percentage.toFixed(0)}</Text>
+                      <Text style={styles.catAmount}>
+                        {getCurrencySymbol()}{cat.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </Text>
+                      <Text style={styles.catPercent}>
+                        {getCurrencySymbol() === '₺' ? '%' : ''}{cat.percentage.toFixed(0)}{getCurrencySymbol() === '₺' ? '' : '%'}
+                      </Text>
                     </View>
                   </View>
                   {/* Progress Bar */}

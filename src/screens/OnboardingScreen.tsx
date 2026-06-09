@@ -5,6 +5,7 @@ import { useVehicles } from '../context/VehicleContext';
 import { COLORS } from '../theme/colors';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
+import { t } from '../localization/i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -15,36 +16,36 @@ interface Slide {
   description: string;
 }
 
-const slides: Slide[] = [
-  {
-    icon: 'speedometer-outline',
-    iconColor: COLORS.primary,
-    title: 'HMM: Araç Masraf Takipçisi',
-    description: 'Aracınızın tüm giderlerini, yakıt tüketimini ve servis maliyetlerini tek bir yerden kolayca takip edin.',
-  },
-  {
-    icon: 'analytics-outline',
-    iconColor: COLORS.success,
-    title: '₺/KM Maliyet Analizi',
-    description: 'Yaptığınız harcamaları katettiğiniz mesafeye oranlayarak kilometre başına gerçek maliyetinizi anlık hesaplayın.',
-  },
-  {
-    icon: 'notifications-outline',
-    iconColor: COLORS.warning,
-    title: 'Akıllı Hatırlatıcılar',
-    description: 'Periyodik yağ değişimi, kasko yenileme ve muayene tarihlerini kaçırmamanız için KM ve tarih bazlı alarmlar kurun.',
-  },
-  {
-    icon: 'shield-checkmark-outline',
-    iconColor: '#38BDF8',
-    title: '%100 Çevrimdışı ve Güvenli',
-    description: 'Verileriniz sunuculara gitmez, sadece telefonunuzda saklanır. Üyelik, internet veya karmaşık ayarlar gerektirmez.',
-  },
-];
-
 export const OnboardingScreen: React.FC = () => {
   const { completeOnboarding } = useVehicles();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  const slides: Slide[] = [
+    {
+      icon: 'speedometer-outline',
+      iconColor: COLORS.primary,
+      title: t('onboarding_title_1'),
+      description: t('onboarding_desc_1'),
+    },
+    {
+      icon: 'analytics-outline',
+      iconColor: COLORS.success,
+      title: t('onboarding_title_2'),
+      description: t('onboarding_desc_2'),
+    },
+    {
+      icon: 'notifications-outline',
+      iconColor: COLORS.warning,
+      title: t('onboarding_title_3'),
+      description: t('onboarding_desc_3'),
+    },
+    {
+      icon: 'shield-checkmark-outline',
+      iconColor: '#38BDF8',
+      title: t('onboarding_title_4'),
+      description: t('onboarding_desc_4'),
+    },
+  ];
 
   const handleNext = () => {
     if (currentSlideIndex < slides.length - 1) {
@@ -69,7 +70,7 @@ export const OnboardingScreen: React.FC = () => {
       <View style={styles.header}>
         {currentSlideIndex < slides.length - 1 ? (
           <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>Geç</Text>
+            <Text style={styles.skipText}>{t('onboarding_skip')}</Text>
           </TouchableOpacity>
         ) : (
           <View />
@@ -102,7 +103,7 @@ export const OnboardingScreen: React.FC = () => {
 
         {/* Next/Start Button */}
         <Button
-          title={currentSlideIndex === slides.length - 1 ? 'Başlayalım!' : 'İleri'}
+          title={currentSlideIndex === slides.length - 1 ? t('onboarding_start') : t('onboarding_next')}
           onPress={handleNext}
           style={styles.button}
         />

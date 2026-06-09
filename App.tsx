@@ -20,6 +20,7 @@ import {
   Outfit_700Bold, 
   Outfit_800ExtraBold 
 } from '@expo-google-fonts/outfit';
+import { t } from './src/localization/i18n';
 
 type Tab = 'dashboard' | 'vehicles' | 'analytics' | 'reminders' | 'backup';
 
@@ -74,7 +75,7 @@ function MainAppContent() {
               >
                 <Ionicons name="warning-outline" size={20} color="#000" />
                 <Text style={styles.alertBannerText}>
-                  Dikkat: Vakti gelen {dueRemindersCount} adet hatırlatıcınız var!
+                  {t('db_due_reminders_warning', { count: dueRemindersCount })}
                 </Text>
                 <Ionicons name="arrow-forward" size={16} color="#000" />
               </TouchableOpacity>
@@ -99,7 +100,7 @@ function MainAppContent() {
   if (isLoading || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('loading')}</Text>
       </View>
     );
   }
@@ -135,7 +136,7 @@ function MainAppContent() {
                 color={activeTab === 'dashboard' ? COLORS.primary : COLORS.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>
-                Panel
+                {t('tab_dashboard')}
               </Text>
             </TouchableOpacity>
 
@@ -149,7 +150,7 @@ function MainAppContent() {
                 color={activeTab === 'vehicles' ? COLORS.primary : COLORS.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'vehicles' && styles.tabLabelActive]}>
-                Araçlar
+                {t('tab_vehicles')}
               </Text>
             </TouchableOpacity>
 
@@ -163,7 +164,7 @@ function MainAppContent() {
                 color={activeTab === 'analytics' ? COLORS.primary : COLORS.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'analytics' && styles.tabLabelActive]}>
-                Analiz
+                {t('tab_analytics')}
               </Text>
             </TouchableOpacity>
 
@@ -180,7 +181,7 @@ function MainAppContent() {
                 {dueRemindersCount > 0 && <View style={styles.tabBadge} />}
               </View>
               <Text style={[styles.tabLabel, activeTab === 'reminders' && styles.tabLabelActive]}>
-                Hatırlatıcı
+                {t('tab_reminders')}
               </Text>
             </TouchableOpacity>
 
@@ -194,7 +195,7 @@ function MainAppContent() {
                 color={activeTab === 'backup' ? COLORS.primary : COLORS.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'backup' && styles.tabLabelActive]}>
-                Yedek
+                {t('tab_backup')}
               </Text>
             </TouchableOpacity>
           </View>

@@ -6,6 +6,7 @@ import { COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
+import { t } from '../localization/i18n';
 
 export const BackupScreen: React.FC = () => {
   const { exportData, importData, clearAllData } = useVehicles();
@@ -23,32 +24,32 @@ export const BackupScreen: React.FC = () => {
   const handleCopyToClipboard = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     Clipboard.setString(backupString);
-    Alert.alert('Başarılı', 'Yedek verisi panoya kopyalandı! Bu metni güvenli bir yere kaydedebilirsiniz.');
+    Alert.alert(t('success'), t('bu_copy_success'));
   };
 
   const handleImport = async () => {
     if (!importString.trim()) {
-      Alert.alert('Hata', 'Lütfen içe aktarmak için geçerli bir yedek metni yapıştırın.');
+      Alert.alert(t('error'), t('bu_import_error_empty'));
       return;
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
-      'Yedeği Geri Yükle',
-      'Bu işlem mevcut tüm araç ve masraf verilerinizi silecektir. Devam etmek istiyor musunuz?',
+      t('bu_import_confirm_title'),
+      t('bu_import_confirm_desc'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'İçe Aktar (Üzerine Yaz)',
+          text: t('bu_import_overwrite'),
           style: 'destructive',
           onPress: async () => {
             const success = await importData(importString.trim());
             if (success) {
               setImportString('');
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-              Alert.alert('Başarılı', 'Verileriniz yedekten başarıyla geri yüklendi!');
+              Alert.alert(t('success'), t('bu_import_success'));
             } else {
-              Alert.alert('Hata', 'Yedek verisi çözümlenemedi. Lütfen metnin tam ve doğru olduğunu kontrol edin.');
+              Alert.alert(t('error'), t('bu_import_fail'));
             }
           },
         },
@@ -59,17 +60,17 @@ export const BackupScreen: React.FC = () => {
   const handleClearData = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
-      'Uygulamayı Sıfırla',
-      'Tüm kayıtlar ve araçlar kalıcı olarak silinecektir. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?',
+      t('bu_reset_confirm_title'),
+      t('bu_reset_confirm_desc'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Evet, Sıfırla',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             await clearAllData();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-            Alert.alert('Başarılı', 'Uygulama sıfırlandı ve onboarding ekranına yönlendiriliyorsunuz.');
+            Alert.alert(t('success'), t('bu_reset_success'));
           },
         },
       ]
@@ -79,19 +80,17 @@ export const BackupScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Yedekle & Yükle</Text>
-        <Text style={styles.subtitle}>Verilerinizi güvenceye alın veya başka bir telefona aktarın</Text>
+        <Text style={styles.title}>{t('bu_title')}</Text>
+        <Text style={styles.subtitle}>{t('bu_subtitle')}</Text>
       </View>
 
       {/* Export Section */}
       <Card style={styles.card}>
         <View style={styles.sectionHeader}>
           <Ionicons name="cloud-upload-outline" size={24} color={COLORS.primary} />
-          <Text style={styles.sectionTitle}>Verileri Dışa Aktar</Text>
+          <Text style={styles.sectionTitle}>{t('bu_export_title')}</Text>
         </View>
-        <Text style={styles.desc}>
-          Tüm verilerinizi (araçlar, masraflar ve hatırlatıcılar) şifreli bir metin formatında dışa aktarın.
-        </Text>
+        <Text style={styles.desc}>{t('bu_export_desc')}</Text>
         
         {showExport ? (
           <View style={styles.exportArea}>
@@ -102,12 +101,12 @@ export const BackupScreen: React.FC = () => {
               style={styles.textInputArea}
             />
             <Button
-              title="Kodu Panoya Kopyala"
+              title={t('bu_copy_btn')}
               onPress={handleCopyToClipboard}
               style={styles.actionBtn}
             />
             <Button
-              title="Gizle"
+              title={t('bu_hide')}
               variant="secondary"
               onPress={() => setShowExport(false)}
               style={styles.hideBtn}
@@ -115,7 +114,7 @@ export const BackupScreen: React.FC = () => {
           </View>
         ) : (
           <Button
-            title="Yedek Kodunu Oluştur"
+            title={t('bu_generate_code')}
             onPress={handleExport}
             style={styles.actionBtn}
           />
@@ -126,21 +125,19 @@ export const BackupScreen: React.FC = () => {
       <Card style={styles.card}>
         <View style={styles.sectionHeader}>
           <Ionicons name="cloud-download-outline" size={24} color={COLORS.success} />
-          <Text style={styles.sectionTitle}>Yedeği İçe Aktar</Text>
+          <Text style={styles.sectionTitle}>{t('bu_import_title')}</Text>
         </View>
-        <Text style={styles.desc}>
-          Daha önce kopyaladığınız yedek kodunu aşağıdaki alana yapıştırarak tüm verilerinizi geri yükleyebilirsiniz.
-        </Text>
+        <Text style={styles.desc}>{t('bu_import_desc')}</Text>
         <TextInput
           multiline
-          placeholder="Yedek kodunu buraya yapıştırın..."
+          placeholder={t('bu_import_placeholder')}
           placeholderTextColor={COLORS.textMuted}
           value={importString}
           onChangeText={setImportString}
           style={[styles.textInputArea, { height: 100 }]}
         />
         <Button
-          title="Yedekten Geri Yükle"
+          title={t('bu_import_btn')}
           variant="danger"
           onPress={handleImport}
           style={styles.actionBtn}
@@ -151,13 +148,11 @@ export const BackupScreen: React.FC = () => {
       <Card style={[styles.card, { borderColor: COLORS.danger + '40', borderWidth: 1 }]}>
         <View style={styles.sectionHeader}>
           <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
-          <Text style={[styles.sectionTitle, { color: COLORS.danger }]}>Tehlikeli Bölge</Text>
+          <Text style={[styles.sectionTitle, { color: COLORS.danger }]}>{t('bu_danger_zone')}</Text>
         </View>
-        <Text style={styles.desc}>
-          Uygulamadaki tüm kayıtları, araçları ve ayarları sıfırlayarak uygulamayı ilk kurulum haline getirin.
-        </Text>
+        <Text style={styles.desc}>{t('bu_danger_desc')}</Text>
         <Button
-          title="Tüm Verileri Sıfırla"
+          title={t('bu_reset_btn')}
           variant="danger"
           onPress={handleClearData}
           style={styles.actionBtn}

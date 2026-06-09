@@ -8,6 +8,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Reminder } from '../types';
 import * as Haptics from 'expo-haptics';
+import { t } from '../localization/i18n';
 
 export const RemindersScreen: React.FC = () => {
   const { selectedVehicle, reminders, addReminder, toggleReminder, deleteReminder } = useVehicles();
@@ -25,18 +26,18 @@ export const RemindersScreen: React.FC = () => {
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!title.trim()) newErrors.title = 'Hatırlatıcı başlığı girmelisiniz';
+    if (!title.trim()) newErrors.title = t('rem_error_title');
     
     if (type === 'date') {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!targetDate.trim() || !dateRegex.test(targetDate)) {
-        newErrors.targetDate = 'Tarih formatı YYYY-MM-DD şeklinde olmalıdır';
+        newErrors.targetDate = t('exp_error_date');
       }
     } else {
       if (!targetOdometer.trim() || isNaN(Number(targetOdometer)) || Number(targetOdometer) <= 0) {
-        newErrors.targetOdometer = 'Geçerli bir hedef kilometre girmelisiniz';
+        newErrors.targetOdometer = t('rem_error_target_km');
       } else if (selectedVehicle && Number(targetOdometer) <= selectedVehicle.currentOdometer) {
-        newErrors.targetOdometer = `Hedef kilometre mevcut kilometreden (${selectedVehicle.currentOdometer} KM) büyük olmalıdır`;
+        newErrors.targetOdometer = t('rem_error_target_km_less', { currentOdometer: selectedVehicle.currentOdometer });
       }
     }
 
@@ -71,10 +72,10 @@ export const RemindersScreen: React.FC = () => {
 
   const handleDelete = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-    Alert.alert('Hatırlatıcıyı Sil', 'Bu hatırlatıcıyı silmek istediğinize emin misiniz?', [
-      { text: 'Vazgeç', style: 'cancel' },
+    Alert.alert(t('rem_delete_confirm_title'), t('rem_delete_confirm_desc'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Sil',
+        text: t('delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteReminder(id);
@@ -103,7 +104,7 @@ export const RemindersScreen: React.FC = () => {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="notifications-outline" size={72} color={COLORS.textMuted} />
-        <Text style={styles.emptyText}>Hatırlatıcıları yönetmek için aktif bir aracınızın olması gerekir.</Text>
+        <Text style={styles.emptyText}>{t('rem_no_vehicle')}</Text>
       </View>
     );
   }
@@ -111,7 +112,7 @@ export const RemindersScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Hatırlatıcılar</Text>
+        <Text style={styles.title}>{t('rem_title')}</Text>
         {!showAddForm && (
           <TouchableOpacity
             style={styles.addButton}
@@ -121,7 +122,7 @@ export const RemindersScreen: React.FC = () => {
             }}
           >
             <Ionicons name="add" size={24} color={COLORS.primary} />
-            <Text style={styles.addButtonText}>Yeni Ekle</Text>
+            <Text style={styles.addButtonText}>{t('add')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -129,7 +130,7 @@ export const RemindersScreen: React.FC = () => {
       {showAddForm ? (
         <Card style={styles.formCard}>
           <View style={styles.formHeader}>
-            <Text style={styles.formTitle}>Yeni Hatırlatıcı Ekle</Text>
+            <Text style={styles.formTitle}>{t('rem_add_reminder')}</Text>
             <TouchableOpacity
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -141,15 +142,15 @@ export const RemindersScreen: React.FC = () => {
           </View>
 
           <Input
-            label="Hatırlatıcı Başlığı *"
-            placeholder="Örn: Periyodik Bakım, Kasko Yenileme"
+            label={`${t('rem_name_placeholder')} *`}
+            placeholder={t('rem_name_placeholder')}
             value={title}
             onChangeText={setTitle}
             error={errors.title}
           />
 
           {/* Type Selector Toggle */}
-          <Text style={styles.sectionLabel}>Hatırlatıcı Türü</Text>
+          <Text style={styles.sectionLabel}>{t('rem_type')}</Text>
           <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[styles.toggleBtn, type === 'date' && styles.toggleBtnActive]}
@@ -163,7 +164,7 @@ export const RemindersScreen: React.FC = () => {
                 size={18}
                 color={type === 'date' ? '#0F172A' : COLORS.textSecondary}
               />
-              <Text style={[styles.toggleText, type === 'date' && styles.toggleTextActive]}>Tarih Bazlı</Text>
+              <Text style={[styles.toggleText, type === 'date' && styles.toggleTextActive]}>{t('rem_type_date')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, type === 'odometer' && styles.toggleBtnActive]}
@@ -177,21 +178,21 @@ export const RemindersScreen: React.FC = () => {
                 size={18}
                 color={type === 'odometer' ? '#0F172A' : COLORS.textSecondary}
               />
-              <Text style={[styles.toggleText, type === 'odometer' && styles.toggleTextActive]}>KM Bazlı</Text>
+              <Text style={[styles.toggleText, type === 'odometer' && styles.toggleTextActive]}>{t('rem_type_km')}</Text>
             </TouchableOpacity>
           </View>
 
           {type === 'date' ? (
             <Input
-              label="Hedef Tarih (YYYY-MM-DD) *"
-              placeholder="Örn: 2026-12-31"
+              label={`${t('rem_target_date')} (YYYY-MM-DD) *`}
+              placeholder="YYYY-MM-DD"
               value={targetDate}
               onChangeText={setTargetDate}
               error={errors.targetDate}
             />
           ) : (
             <Input
-              label="Hedef Kilometre (KM) *"
+              label={`${t('rem_target_km')} *`}
               placeholder={`Örn: ${(selectedVehicle.currentOdometer + 10000)}`}
               value={targetOdometer}
               onChangeText={setTargetOdometer}
@@ -201,7 +202,7 @@ export const RemindersScreen: React.FC = () => {
           )}
 
           <Button
-            title="Hatırlatıcıyı Ekle"
+            title={t('rem_add_reminder')}
             onPress={handleAddReminder}
             style={styles.submitBtn}
           />
@@ -209,9 +210,9 @@ export const RemindersScreen: React.FC = () => {
       ) : activeReminders.length === 0 ? (
         <Card style={styles.emptyListCard}>
           <Ionicons name="notifications-off-outline" size={48} color={COLORS.textMuted} style={{ marginBottom: 12 }} />
-          <Text style={styles.emptyListTitle}>Hatırlatıcı Bulunmuyor</Text>
+          <Text style={styles.emptyListTitle}>{t('rem_empty')}</Text>
           <Text style={styles.emptyListDesc}>
-            Aracınızın sigorta tarihini veya periyodik yağ değişim kilometresini kaçırmamak için sağ üstten hatırlatıcı ekleyebilirsiniz.
+            {t('rem_empty_desc')}
           </Text>
         </Card>
       ) : (
@@ -251,8 +252,8 @@ export const RemindersScreen: React.FC = () => {
                     </Text>
                     <Text style={styles.reminderTarget}>
                       {item.type === 'date'
-                        ? `Hedef Tarih: ${item.targetDate}`
-                        : `Hedef KM: ${item.targetOdometer?.toLocaleString('tr-TR')} KM`}
+                        ? `${t('rem_target_date')}: ${item.targetDate}`
+                        : `${t('rem_target_km')}: ${item.targetOdometer?.toLocaleString()} KM`}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -260,7 +261,7 @@ export const RemindersScreen: React.FC = () => {
                 <View style={styles.actionArea}>
                   {due && !item.isCompleted && (
                     <View style={styles.dueBadge}>
-                      <Text style={styles.dueText}>VAKTİ GELDİ</Text>
+                      <Text style={styles.dueText}>{t('rem_status_due').toUpperCase()}</Text>
                     </View>
                   )}
                   <TouchableOpacity

@@ -8,6 +8,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { ExpenseCategory } from '../types';
 import * as Haptics from 'expo-haptics';
+import { t, getCurrencySymbol } from '../localization/i18n';
 
 interface AddExpenseScreenProps {
   onSuccess: () => void;
@@ -25,12 +26,12 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const categories: { type: ExpenseCategory; label: string; icon: string; color: string }[] = [
-    { type: 'fuel', label: 'Akaryakıt', icon: 'speedometer-outline', color: COLORS.primary },
-    { type: 'maintenance', label: 'Bakım/Onarım', icon: 'construct-outline', color: COLORS.info },
-    { type: 'insurance', label: 'Sigorta/Kasko', icon: 'shield-checkmark-outline', color: '#8B5CF6' },
-    { type: 'tax', label: 'Vergi/Harç', icon: 'receipt-outline', color: '#EC4899' },
-    { type: 'wash', label: 'Temizlik/Yıkama', icon: 'water-outline', color: '#10B981' },
-    { type: 'other', label: 'Diğer', icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary },
+    { type: 'fuel', label: t('cat_fuel'), icon: 'speedometer-outline', color: COLORS.primary },
+    { type: 'maintenance', label: t('cat_maintenance'), icon: 'construct-outline', color: COLORS.info },
+    { type: 'insurance', label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' },
+    { type: 'tax', label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' },
+    { type: 'wash', label: t('cat_wash'), icon: 'water-outline', color: '#10B981' },
+    { type: 'other', label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary },
   ];
 
   // Set today's date by default in YYYY-MM-DD format
@@ -59,18 +60,18 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
     if (!amount.trim() || isNaN(Number(amount)) || Number(amount) <= 0) {
-      newErrors.amount = 'Geçerli bir tutar giriniz';
+      newErrors.amount = t('exp_error_amount');
     }
     if (!odometer.trim() || isNaN(Number(odometer)) || Number(odometer) < 0) {
-      newErrors.odometer = 'Geçerli bir kilometre giriniz';
+      newErrors.odometer = t('exp_error_odometer');
     } else if (selectedVehicle && Number(odometer) < selectedVehicle.initialOdometer) {
-      newErrors.odometer = `Kilometre başlangıç kilometresinden (${selectedVehicle.initialOdometer} KM) küçük olamaz`;
+      newErrors.odometer = t('exp_error_odometer_less', { minOdometer: selectedVehicle.initialOdometer });
     }
     
     // Simple Date validation regex YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!date.trim() || !dateRegex.test(date)) {
-      newErrors.date = 'Tarih formatı YYYY-MM-DD şeklinde olmalıdır';
+      newErrors.date = t('exp_error_date');
     }
     
     setErrors(newErrors);
@@ -79,7 +80,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
 
   const handleSave = async () => {
     if (!selectedVehicle) {
-      Alert.alert('Hata', 'Lütfen önce bir araç seçin veya ekleyin.');
+      Alert.alert(t('error'), t('v_empty_vehicles'));
       return;
     }
     
@@ -102,7 +103,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="car-outline" size={64} color={COLORS.textMuted} />
-        <Text style={styles.errorText}>Masraf eklemek için önce araç listesinden bir araç seçmeli veya eklemelisiniz.</Text>
+        <Text style={styles.errorText}>{t('v_empty_vehicles')}</Text>
       </View>
     );
   }
@@ -110,13 +111,13 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Masraf Ekle</Text>
+        <Text style={styles.title}>{t('exp_title')}</Text>
         <Text style={styles.vehicleSubtitle}>{selectedVehicle.name}</Text>
       </View>
 
       <Card style={styles.card}>
         {/* Category Selector */}
-        <Text style={styles.sectionLabel}>Masraf Kategorisi</Text>
+        <Text style={styles.sectionLabel}>{t('exp_category_label')}</Text>
         <View style={styles.categoryGrid}>
           {categories.map(cat => {
             const isSelected = category === cat.type;
@@ -150,7 +151,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
 
         {/* Amount Input */}
         <Input
-          label="Tutar (₺) *"
+          label={`${t('exp_amount', { currency: getCurrencySymbol() })} *`}
           placeholder="0.00"
           value={amount}
           onChangeText={setAmount}
@@ -160,8 +161,8 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
 
         {/* Odometer Input */}
         <Input
-          label="Kilometre Sayacı (KM) *"
-          placeholder={`Mevcut: ${selectedVehicle.currentOdometer}`}
+          label={`${t('exp_odometer')} *`}
+          placeholder={`${t('db_current_odometer')}: ${selectedVehicle.currentOdometer}`}
           value={odometer}
           onChangeText={setOdometer}
           keyboardType="numeric"
@@ -170,13 +171,13 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
 
         {/* Date Input with Presets */}
         <View style={styles.dateLabelRow}>
-          <Text style={styles.dateLabel}>Tarih *</Text>
+          <Text style={styles.dateLabel}>{t('exp_date')} *</Text>
           <View style={styles.presetsRow}>
             <TouchableOpacity style={styles.presetBtn} onPress={() => setPresetDate(0)}>
-              <Text style={styles.presetText}>Bugün</Text>
+              <Text style={styles.presetText}>{t('today')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.presetBtn} onPress={() => setPresetDate(1)}>
-              <Text style={styles.presetText}>Dün</Text>
+              <Text style={styles.presetText}>{t('yesterday')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -190,21 +191,21 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
 
         {/* Notes Input */}
         <Input
-          label="Notlar (Opsiyonel)"
-          placeholder="Örn: Opet, Motor Yağı değişimi yapıldı..."
+          label={t('exp_notes_optional')}
+          placeholder={t('exp_notes_placeholder')}
           value={notes}
           onChangeText={setNotes}
         />
 
         <View style={styles.actionButtons}>
           <Button
-            title="İptal Et"
+            title={t('cancel')}
             variant="secondary"
             onPress={onSuccess}
             style={{ flex: 1, marginRight: 12 }}
           />
           <Button
-            title="Kaydet"
+            title={t('save')}
             onPress={handleSave}
             style={{ flex: 1.5 }}
           />

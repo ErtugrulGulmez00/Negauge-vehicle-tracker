@@ -8,6 +8,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Expense } from '../types';
 import * as Haptics from 'expo-haptics';
+import { t, getCurrencySymbol } from '../localization/i18n';
 
 interface DashboardScreenProps {
   onAddExpensePress: () => void;
@@ -54,7 +55,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const nextOdo = Number(quickOdo);
     
     if (isNaN(nextOdo) || nextOdo < selectedVehicle.currentOdometer) {
-      Alert.alert('Geçersiz Değer', `Yeni kilometre mevcut kilometreden (${selectedVehicle.currentOdometer} KM) küçük olamaz.`);
+      Alert.alert(t('db_invalid_odo_title'), t('exp_error_odometer_less', { minOdometer: selectedVehicle.currentOdometer }));
       return;
     }
 
@@ -71,12 +72,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const handleDeleteExpense = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
-      'Masrafı Sil',
-      'Bu masraf kaydını silmek istediğinize emin misiniz?',
+      t('db_delete_expense_title'),
+      t('db_delete_expense_confirm'),
       [
-        { text: 'Vazgeç', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Evet, Sil',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             await deleteExpense(id);
@@ -90,17 +91,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const getCategoryDetails = (category: string) => {
     switch (category) {
       case 'fuel':
-        return { label: 'Akaryakıt', icon: 'speedometer-outline', color: COLORS.primary };
+        return { label: t('cat_fuel'), icon: 'speedometer-outline', color: COLORS.primary };
       case 'maintenance':
-        return { label: 'Bakım/Onarım', icon: 'construct-outline', color: COLORS.info };
+        return { label: t('cat_maintenance'), icon: 'construct-outline', color: COLORS.info };
       case 'insurance':
-        return { label: 'Sigorta', icon: 'shield-checkmark-outline', color: '#8B5CF6' };
+        return { label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' };
       case 'tax':
-        return { label: 'Vergi/Harç', icon: 'receipt-outline', color: '#EC4899' };
+        return { label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' };
       case 'wash':
-        return { label: 'Yıkama', icon: 'water-outline', color: '#10B981' };
+        return { label: t('cat_wash'), icon: 'water-outline', color: '#10B981' };
       default:
-        return { label: 'Diğer', icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary };
+        return { label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: COLORS.textSecondary };
     }
   };
 
@@ -108,12 +109,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="car-outline" size={72} color={COLORS.textMuted} />
-        <Text style={styles.emptyTitle}>Kayıtlı Araç Bulunmamaktadır</Text>
+        <Text style={styles.emptyTitle}>{t('v_empty_vehicles')}</Text>
         <Text style={styles.emptyDesc}>
-          Uygulamayı kullanmaya başlamak için lütfen ilk aracınızı ekleyin.
+          {t('v_add_first_vehicle')}
         </Text>
         <Button
-          title="İlk Aracımı Ekle"
+          title={t('v_add_vehicle')}
           onPress={onNavigateToVehicles}
           style={styles.emptyBtn}
         />
@@ -131,7 +132,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
           <View style={styles.vehicleTextContainer}>
             <Text style={styles.vehicleName}>{selectedVehicle.name}</Text>
-            <Text style={styles.vehiclePlate}>{selectedVehicle.plate || 'Plakasız Araç'}</Text>
+            <Text style={styles.vehiclePlate}>{selectedVehicle.plate || '-'}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
         </View>
@@ -141,32 +142,36 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.statsGrid}>
         <View style={styles.statsColumn}>
           <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Toplam Harcama</Text>
-            <Text style={styles.statValue}>₺{stats.total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-            <Text style={styles.statSubText}>Tüm Zamanlar</Text>
+            <Text style={styles.statLabel}>{t('db_total_spend')}</Text>
+            <Text style={styles.statValue}>
+              {getCurrencySymbol()}{stats.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <Text style={styles.statSubText}>{t('db_all_time')}</Text>
           </Card>
           
           <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Kilometre Başı Maliyet</Text>
+            <Text style={styles.statLabel}>{t('db_cost_per_km')}</Text>
             <Text style={[styles.statValue, { color: COLORS.primary }]}>
-              ₺{stats.costPerKm.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {getCurrencySymbol()}{stats.costPerKm.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <Text style={styles.statSubText}>
-              {stats.distance > 0 ? `${stats.distance.toLocaleString('tr-TR')} KM sürüşe göre` : 'KM verisi yok'}
+              {stats.distance > 0 ? t('db_based_on_distance', { distance: stats.distance.toLocaleString() }) : t('db_no_distance')}
             </Text>
           </Card>
         </View>
         
         <View style={styles.statsColumn}>
           <Card style={styles.statCard}>
-            <Text style={styles.statLabel}>Bu Ay</Text>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>₺{stats.monthly.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-            <Text style={styles.statSubText}>Cari Ay Toplamı</Text>
+            <Text style={styles.statLabel}>{t('db_monthly_spend')}</Text>
+            <Text style={[styles.statValue, { color: COLORS.success }]}>
+              {getCurrencySymbol()}{stats.monthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <Text style={styles.statSubText}>{t('db_current_month')}</Text>
           </Card>
 
           <Card style={styles.statCard}>
             <View style={styles.odoHeader}>
-              <Text style={styles.statLabel}>Sayaç (KM)</Text>
+              <Text style={styles.statLabel}>{t('db_odometer_title')}</Text>
               <TouchableOpacity
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -191,34 +196,34 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </TouchableOpacity>
               </View>
             ) : (
-              <Text style={styles.statValue}>{selectedVehicle.currentOdometer.toLocaleString('tr-TR')}</Text>
+              <Text style={styles.statValue}>{selectedVehicle.currentOdometer.toLocaleString()}</Text>
             )}
-            <Text style={styles.statSubText}>Mevcut Kilometre</Text>
+            <Text style={styles.statSubText}>{t('db_current_odometer')}</Text>
           </Card>
         </View>
       </View>
 
       {/* Quick Action Button */}
       <Button
-        title="Yeni Masraf Ekle"
+        title={t('db_add_expense_btn')}
         onPress={onAddExpensePress}
         style={styles.addBtn}
       />
 
       {/* Recent Activity List */}
       <View style={styles.listHeaderRow}>
-        <Text style={styles.sectionTitle}>Son Masraflar</Text>
+        <Text style={styles.sectionTitle}>{t('db_recent_expenses')}</Text>
         {vehicleExpenses.length > 0 && (
-          <Text style={styles.countText}>{vehicleExpenses.length} Kayıt</Text>
+          <Text style={styles.countText}>{t('db_count_records', { count: vehicleExpenses.length })}</Text>
         )}
       </View>
 
       {vehicleExpenses.length === 0 ? (
         <Card style={styles.noExpensesCard}>
           <Ionicons name="receipt-outline" size={40} color={COLORS.textMuted} style={{ marginBottom: 8 }} />
-          <Text style={styles.noExpensesText}>Henüz hiç masraf eklemediniz.</Text>
+          <Text style={styles.noExpensesText}>{t('db_no_expenses')}</Text>
           <Text style={styles.noExpensesSubText}>
-            Yukarıdaki butona dokunarak ilk yakıt alımınızı veya bakım harcamanızı girebilirsiniz.
+            {t('db_no_expenses_sub')}
           </Text>
         </Card>
       ) : (
@@ -239,12 +244,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       </Text>
                     ) : null}
                     <Text style={styles.expenseMeta}>
-                      {item.date} • {item.odometer.toLocaleString('tr-TR')} KM
+                      {item.date} • {item.odometer.toLocaleString()} KM
                     </Text>
                   </View>
                 </View>
                 <View style={styles.expenseRight}>
-                  <Text style={styles.expenseAmount}>₺{item.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</Text>
+                  <Text style={styles.expenseAmount}>
+                    {getCurrencySymbol()}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Text>
                   <TouchableOpacity
                     onPress={() => handleDeleteExpense(item.id)}
                     style={styles.trashBtn}
