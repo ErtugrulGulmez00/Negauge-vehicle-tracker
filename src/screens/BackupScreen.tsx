@@ -8,7 +8,7 @@ import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
 
 export const BackupScreen: React.FC = () => {
-  const { exportData, importData } = useVehicles();
+  const { exportData, importData, clearAllData } = useVehicles();
   const [backupString, setBackupString] = useState('');
   const [importString, setImportString] = useState('');
   const [showExport, setShowExport] = useState(false);
@@ -50,6 +50,26 @@ export const BackupScreen: React.FC = () => {
             } else {
               Alert.alert('Hata', 'Yedek verisi çözümlenemedi. Lütfen metnin tam ve doğru olduğunu kontrol edin.');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearData = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    Alert.alert(
+      'Uygulamayı Sıfırla',
+      'Tüm kayıtlar ve araçlar kalıcı olarak silinecektir. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Evet, Sıfırla',
+          style: 'destructive',
+          onPress: async () => {
+            await clearAllData();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            Alert.alert('Başarılı', 'Uygulama sıfırlandı ve onboarding ekranına yönlendiriliyorsunuz.');
           },
         },
       ]
@@ -123,6 +143,23 @@ export const BackupScreen: React.FC = () => {
           title="Yedekten Geri Yükle"
           variant="danger"
           onPress={handleImport}
+          style={styles.actionBtn}
+        />
+      </Card>
+
+      {/* Danger Zone */}
+      <Card style={[styles.card, { borderColor: COLORS.danger + '40', borderWidth: 1 }]}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+          <Text style={[styles.sectionTitle, { color: COLORS.danger }]}>Tehlikeli Bölge</Text>
+        </View>
+        <Text style={styles.desc}>
+          Uygulamadaki tüm kayıtları, araçları ve ayarları sıfırlayarak uygulamayı ilk kurulum haline getirin.
+        </Text>
+        <Button
+          title="Tüm Verileri Sıfırla"
+          variant="danger"
+          onPress={handleClearData}
           style={styles.actionBtn}
         />
       </Card>

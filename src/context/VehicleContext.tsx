@@ -33,6 +33,9 @@ interface VehicleContextType {
   // Onboarding
   hasCompletedOnboarding: boolean;
   completeOnboarding: () => Promise<void>;
+  
+  // Developer Tools
+  clearAllData: () => Promise<void>;
 }
 
 const VehicleContext = createContext<VehicleContextType | undefined>(undefined);
@@ -288,6 +291,19 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await AsyncStorage.setItem('@onboarding_completed', 'true');
   };
 
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.clear();
+      setVehicles([]);
+      setExpenses([]);
+      setReminders([]);
+      setSelectedVehicleId(null);
+      setHasCompletedOnboarding(false);
+    } catch (error) {
+      console.error('Failed to clear app data', error);
+    }
+  };
+
   return (
     <VehicleContext.Provider
       value={{
@@ -311,6 +327,7 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         importData,
         hasCompletedOnboarding,
         completeOnboarding,
+        clearAllData,
       }}
     >
       {children}
