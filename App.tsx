@@ -13,11 +13,24 @@ import { BackupScreen } from './src/screens/BackupScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { Reminder } from './src/types';
 import * as Haptics from 'expo-haptics';
+import { 
+  useFonts, 
+  Outfit_400Regular, 
+  Outfit_600SemiBold, 
+  Outfit_700Bold, 
+  Outfit_800ExtraBold 
+} from '@expo-google-fonts/outfit';
 
 type Tab = 'dashboard' | 'vehicles' | 'analytics' | 'reminders' | 'backup';
 
 function MainAppContent() {
   const { selectedVehicle, reminders, isLoading, hasCompletedOnboarding } = useVehicles();
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
+  });
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showAddExpense, setShowAddExpense] = useState(false);
 
@@ -83,7 +96,7 @@ function MainAppContent() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Yükleniyor...</Text>

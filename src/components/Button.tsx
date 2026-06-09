@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../theme/colors';
+import { COLORS, FONTS } from '../theme/colors';
 
 interface ButtonProps {
   title: string;
@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
+    fontFamily: FONTS.bold,
     fontSize: 16,
-    fontWeight: '700',
     letterSpacing: 0.3,
   },
   textSolid: {

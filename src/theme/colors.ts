@@ -31,3 +31,10 @@ export const COLORS = {
     '#E2E8F0', // White
   ]
 };
+
+export const FONTS = {
+  regular: 'Outfit_400Regular',
+  medium: 'Outfit_600SemiBold',
+  bold: 'Outfit_700Bold',
+  extrabold: 'Outfit_800ExtraBold',
+};

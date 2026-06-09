@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
-import { COLORS } from '../theme/colors';
+import { COLORS, FONTS } from '../theme/colors';
 
 interface InputProps {
   label?: string;
@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
+    fontFamily: FONTS.medium,
     fontSize: 14,
-    fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.2,
@@ -82,14 +82,15 @@ const styles = StyleSheet.create({
     borderColor: COLORS.danger,
   },
   input: {
+    fontFamily: FONTS.regular,
     fontSize: 16,
     color: COLORS.textPrimary,
     padding: 0, // Reset default Android paddings
   },
   errorText: {
+    fontFamily: FONTS.medium,
     fontSize: 12,
     color: COLORS.danger,
     marginTop: 4,
-    fontWeight: '500',
   },
 });
