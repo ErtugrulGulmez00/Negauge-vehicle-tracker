@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
-import { COLORS, FONTS } from '../theme/colors';
+import { useVehicles } from '../context/VehicleContext';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 
 interface InputProps {
   label?: string;
@@ -26,30 +27,57 @@ export const Input: React.FC<InputProps> = ({
   maxLength,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const { theme } = useVehicles();
+  const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
+  const dynamicStyles = {
+    label: {
+      color: currentColors.textSecondary,
+    },
+    inputWrapper: {
+      backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9',
+      borderColor: currentColors.cardBorder,
+    },
+    inputFocused: {
+      borderColor: currentColors.primary,
+    },
+    inputError: {
+      borderColor: currentColors.danger,
+    },
+    input: {
+      color: currentColors.textPrimary,
+    },
+    errorText: {
+      color: currentColors.danger,
+    },
+  };
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text style={[styles.label, dynamicStyles.label]}>{label}</Text>}
       <View
         style={[
           styles.inputWrapper,
+          dynamicStyles.inputWrapper,
           isFocused && styles.inputFocused,
+          isFocused && dynamicStyles.inputFocused,
           error && styles.inputError,
+          error && dynamicStyles.inputError,
         ]}
       >
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={currentColors.textMuted}
           keyboardType={keyboardType}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           maxLength={maxLength}
-          style={[styles.input, inputStyle]}
+          style={[styles.input, dynamicStyles.input, inputStyle]}
         />
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, dynamicStyles.errorText]}>{error}</Text>}
     </View>
   );
 };
@@ -60,37 +88,27 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontFamily: FONTS.medium,
     fontSize: 14,
-    color: COLORS.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.2,
+    fontWeight: '600',
   },
   inputWrapper: {
     height: 52,
-    backgroundColor: '#0F172A',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
-  inputFocused: {
-    borderColor: COLORS.primary,
-  },
-  inputError: {
-    borderColor: COLORS.danger,
-  },
+  inputFocused: {},
+  inputError: {},
   input: {
-    fontFamily: FONTS.regular,
     fontSize: 16,
-    color: COLORS.textPrimary,
     padding: 0, // Reset default Android paddings
   },
   errorText: {
-    fontFamily: FONTS.medium,
     fontSize: 12,
-    color: COLORS.danger,
     marginTop: 4,
+    fontWeight: '600',
   },
 });

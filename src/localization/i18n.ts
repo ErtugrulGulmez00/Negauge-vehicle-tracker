@@ -4,6 +4,12 @@ import * as Localization from 'expo-localization';
 const locales = Localization.getLocales();
 const deviceLanguage = locales && locales.length > 0 ? locales[0].languageCode || 'tr' : 'tr';
 
+export let appLanguage = deviceLanguage;
+
+export const setAppLanguage = (lang: 'tr' | 'en') => {
+  appLanguage = lang;
+};
+
 const tr = {
   // Common
   loading: 'Yükleniyor...',
@@ -24,7 +30,7 @@ const tr = {
   tab_vehicles: 'Araçlar',
   tab_analytics: 'Analiz',
   tab_reminders: 'Hatırlatıcı',
-  tab_backup: 'Yedekle',
+  tab_backup: 'Ayarlar',
 
   // Onboarding
   onboarding_skip: 'Geç',
@@ -180,6 +186,14 @@ const tr = {
   bu_reset_confirm_title: 'Uygulamayı Sıfırla',
   bu_reset_confirm_desc: 'Tüm kayıtlar ve araçlar kalıcı olarak silinecektir. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?',
   bu_reset_success: 'Uygulama sıfırlandı ve onboarding ekranına yönlendiriliyorsunuz.',
+
+  // Settings
+  sett_title: 'Ayarlar',
+  sett_app_settings: 'Uygulama Ayarları',
+  sett_lang: 'Dil Seçimi',
+  sett_theme: 'Görünüm Teması',
+  sett_theme_dark: 'Karanlık',
+  sett_theme_light: 'Aydınlık',
 };
 
 const en: typeof tr = {
@@ -202,7 +216,7 @@ const en: typeof tr = {
   tab_vehicles: 'Vehicles',
   tab_analytics: 'Analytics',
   tab_reminders: 'Reminders',
-  tab_backup: 'Backup',
+  tab_backup: 'Settings',
 
   // Onboarding
   onboarding_skip: 'Skip',
@@ -358,12 +372,20 @@ const en: typeof tr = {
   bu_reset_confirm_title: 'Reset App',
   bu_reset_confirm_desc: 'All records and vehicles will be permanently deleted. This action cannot be undone. Do you want to proceed?',
   bu_reset_success: 'App reset successfully. Redirecting you to onboarding.',
+
+  // Settings
+  sett_title: 'Settings',
+  sett_app_settings: 'App Settings',
+  sett_lang: 'App Language',
+  sett_theme: 'App Theme',
+  sett_theme_dark: 'Dark',
+  sett_theme_light: 'Light',
 };
 
 export type TranslationKey = keyof typeof tr;
 
 export const t = (key: TranslationKey, params?: Record<string, string | number>): string => {
-  const isTr = deviceLanguage.startsWith('tr');
+  const isTr = appLanguage.startsWith('tr');
   const translations = isTr ? tr : en;
   let text = translations[key] || tr[key] || String(key);
   
@@ -376,7 +398,7 @@ export const t = (key: TranslationKey, params?: Record<string, string | number>)
 };
 
 export const getCurrencySymbol = (): string => {
-  return deviceLanguage.startsWith('tr') ? '₺' : '$';
+  return appLanguage.startsWith('tr') ? '₺' : '$';
 };
 
 export const getDistanceUnit = (): string => {

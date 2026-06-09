@@ -1,7 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { COLORS, FONTS } from '../theme/colors';
+import { useVehicles } from '../context/VehicleContext';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 
 interface ButtonProps {
   title: string;
@@ -24,6 +25,9 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   hapticFeedback = true,
 }) => {
+  const { theme } = useVehicles();
+  const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
   const handlePress = () => {
     if (disabled || loading) return;
     if (hapticFeedback) {
@@ -32,31 +36,59 @@ export const Button: React.FC<ButtonProps> = ({
     onPress();
   };
 
+  const dynamicStyles = {
+    primary: {
+      backgroundColor: currentColors.primary,
+    },
+    secondary: {
+      backgroundColor: currentColors.cardBackground,
+      borderColor: currentColors.cardBorder,
+    },
+    danger: {
+      backgroundColor: currentColors.danger,
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderColor: currentColors.primary,
+    },
+    disabled: {
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#E2E8F0',
+      borderColor: theme === 'dark' ? '#334155' : '#CBD5E1',
+      opacity: 0.5,
+    },
+    textOutline: {
+      color: currentColors.primary,
+    },
+    textDisabled: {
+      color: currentColors.textMuted,
+    },
+  };
+
   const getButtonStyle = () => {
     const base: ViewStyle = styles.btn;
-    if (disabled) return [base, styles.disabled, style];
+    if (disabled) return [base, dynamicStyles.disabled, style];
     
     switch (variant) {
       case 'primary':
-        return [base, styles.primary, style];
+        return [base, dynamicStyles.primary, style];
       case 'secondary':
-        return [base, styles.secondary, style];
+        return [base, dynamicStyles.secondary, style];
       case 'danger':
-        return [base, styles.danger, style];
+        return [base, dynamicStyles.danger, style];
       case 'outline':
-        return [base, styles.outline, style];
+        return [base, dynamicStyles.outline, style];
       default:
-        return [base, styles.primary, style];
+        return [base, dynamicStyles.primary, style];
     }
   };
 
   const getTextStyle = () => {
     const base: TextStyle = styles.text;
-    if (disabled) return [base, styles.textDisabled, textStyle];
+    if (disabled) return [base, dynamicStyles.textDisabled, textStyle];
     
     switch (variant) {
       case 'outline':
-        return [base, styles.textOutline, textStyle];
+        return [base, dynamicStyles.textOutline, textStyle];
       default:
         return [base, styles.textSolid, textStyle];
     }
@@ -70,7 +102,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={getButtonStyle()}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? COLORS.primary : '#000'} size="small" />
+        <ActivityIndicator color={variant === 'outline' ? currentColors.primary : '#000'} size="small" />
       ) : (
         <Text style={getTextStyle()}>{title}</Text>
       )}
@@ -89,37 +121,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  primary: {
-    backgroundColor: COLORS.primary,
-  },
-  secondary: {
-    backgroundColor: COLORS.cardBackground,
-    borderColor: COLORS.cardBorder,
-  },
-  danger: {
-    backgroundColor: COLORS.danger,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderColor: COLORS.primary,
-  },
-  disabled: {
-    backgroundColor: '#1E293B',
-    borderColor: '#334155',
-    opacity: 0.5,
-  },
   text: {
-    fontFamily: FONTS.bold,
     fontSize: 16,
     letterSpacing: 0.3,
+    fontWeight: '700',
   },
   textSolid: {
     color: '#0F172A', // Dark text on primary/warning buttons
-  },
-  textOutline: {
-    color: COLORS.primary,
-  },
-  textDisabled: {
-    color: COLORS.textMuted,
   },
 });

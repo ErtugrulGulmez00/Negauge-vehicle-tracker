@@ -3,13 +3,13 @@ import { StyleSheet, View, Text, SafeAreaView, Platform, StatusBar as RNStatusBa
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { VehicleProvider, useVehicles } from './src/context/VehicleContext';
-import { COLORS } from './src/theme/colors';
+import { COLORS, DARK_COLORS, LIGHT_COLORS } from './src/theme/colors';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { VehiclesScreen } from './src/screens/VehiclesScreen';
 import { AddExpenseScreen } from './src/screens/AddExpenseScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { RemindersScreen } from './src/screens/RemindersScreen';
-import { BackupScreen } from './src/screens/BackupScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { Reminder } from './src/types';
 import * as Haptics from 'expo-haptics';
@@ -25,7 +25,7 @@ import { t } from './src/localization/i18n';
 type Tab = 'dashboard' | 'vehicles' | 'analytics' | 'reminders' | 'backup';
 
 function MainAppContent() {
-  const { selectedVehicle, reminders, isLoading, hasCompletedOnboarding } = useVehicles();
+  const { selectedVehicle, reminders, isLoading, hasCompletedOnboarding, theme } = useVehicles();
   const [fontsLoaded] = useFonts({
     Outfit_400Regular,
     Outfit_600SemiBold,
@@ -34,6 +34,8 @@ function MainAppContent() {
   });
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showAddExpense, setShowAddExpense] = useState(false);
+
+  const styles = getStyles(theme);
 
   const handleTabChange = (tab: Tab) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -93,7 +95,7 @@ function MainAppContent() {
       case 'reminders':
         return <RemindersScreen />;
       case 'backup':
-        return <BackupScreen />;
+        return <SettingsScreen />;
     }
   };
 
@@ -115,7 +117,7 @@ function MainAppContent() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       
       <View style={styles.container}>
         {/* Active Screen */}
@@ -190,7 +192,7 @@ function MainAppContent() {
               onPress={() => handleTabChange('backup')}
             >
               <Ionicons
-                name={activeTab === 'backup' ? 'cloud-done' : 'cloud-done-outline'}
+                name={activeTab === 'backup' ? 'settings' : 'settings-outline'}
                 size={22}
                 color={activeTab === 'backup' ? COLORS.primary : COLORS.textSecondary}
               />
@@ -213,83 +215,92 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
-  },
-  container: {
-    flex: 1,
-  },
-  screenContainer: {
-    flex: 1,
-  },
-  flexOne: {
-    flex: 1,
-  },
-  tabBar: {
-    height: 70,
-    flexDirection: 'row',
-    backgroundColor: COLORS.cardBackground,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 10 : 0,
-  },
-  tabItem: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-    height: '100%',
-  },
-  tabLabel: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  tabLabelActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  tabBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.warning,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  alertBanner: {
-    backgroundColor: COLORS.warning,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginHorizontal: 20,
-    marginTop: 10,
-    borderRadius: 10,
-    justifyContent: 'space-between',
-  },
-  alertBannerText: {
-    color: '#0F172A',
-    fontSize: 12,
-    fontWeight: '700',
-    flex: 1,
-    marginLeft: 8,
-  },
-});
+let memoizedStyles: any = null;
+let memoizedTheme: string = '';
+
+const getStyles = (theme: 'dark' | 'light') => {
+  if (memoizedTheme === theme && memoizedStyles) return memoizedStyles;
+  const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+  memoizedTheme = theme;
+  memoizedStyles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+    },
+    container: {
+      flex: 1,
+    },
+    screenContainer: {
+      flex: 1,
+    },
+    flexOne: {
+      flex: 1,
+    },
+    tabBar: {
+      height: 70,
+      flexDirection: 'row',
+      backgroundColor: colors.cardBackground,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+    },
+    tabItem: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      flex: 1,
+      height: '100%',
+    },
+    tabLabel: {
+      fontSize: 10,
+      color: colors.textSecondary,
+      marginTop: 4,
+      fontWeight: '600',
+    },
+    tabLabelActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    tabBadge: {
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.warning,
+    },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      color: colors.textPrimary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    alertBanner: {
+      backgroundColor: colors.warning,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginHorizontal: 20,
+      marginTop: 10,
+      borderRadius: 10,
+      justifyContent: 'space-between',
+    },
+    alertBannerText: {
+      color: '#0F172A',
+      fontSize: 12,
+      fontWeight: '700',
+      flex: 1,
+      marginLeft: 8,
+    },
+  });
+  return memoizedStyles;
+};

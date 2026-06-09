@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, TouchableOpacity, StyleProp } from 'react-native';
-import { COLORS } from '../theme/colors';
+import { useVehicles } from '../context/VehicleContext';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 
 interface CardProps {
   children: React.ReactNode;
@@ -10,6 +11,14 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, style, onPress, bordered = true }) => {
+  const { theme } = useVehicles();
+  const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
+  const dynamicCardStyle = {
+    backgroundColor: currentColors.cardBackground,
+    borderColor: currentColors.cardBorder,
+  };
+
   if (onPress) {
     return (
       <TouchableOpacity
@@ -18,6 +27,7 @@ export const Card: React.FC<CardProps> = ({ children, style, onPress, bordered =
         style={[
           styles.card,
           bordered && styles.bordered,
+          dynamicCardStyle,
           style,
         ]}
       >
@@ -27,7 +37,7 @@ export const Card: React.FC<CardProps> = ({ children, style, onPress, bordered =
   }
 
   return (
-    <View style={[styles.card, bordered && styles.bordered, style]}>
+    <View style={[styles.card, bordered && styles.bordered, dynamicCardStyle, style]}>
       {children}
     </View>
   );
@@ -35,7 +45,6 @@ export const Card: React.FC<CardProps> = ({ children, style, onPress, bordered =
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -46,6 +55,5 @@ const styles = StyleSheet.create({
   },
   bordered: {
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
   },
 });

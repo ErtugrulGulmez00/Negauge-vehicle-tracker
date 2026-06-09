@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Vehicle, Expense, Reminder, ExpenseCategory } from '../types';
+import { setAppLanguage, appLanguage } from '../localization/i18n';
+import { setThemeColors } from '../theme/colors';
 
 interface VehicleContextType {
   vehicles: Vehicle[];
@@ -9,6 +11,12 @@ interface VehicleContextType {
   selectedVehicleId: string | null;
   selectedVehicle: Vehicle | null;
   isLoading: boolean;
+  
+  // Theme & Language
+  language: 'tr' | 'en';
+  theme: 'dark' | 'light';
+  setLanguage: (lang: 'tr' | 'en') => Promise<void>;
+  setTheme: (theme: 'dark' | 'light') => Promise<void>;
   
   // Vehicle Actions
   addVehicle: (name: string, plate: string, color: string, icon: string, year: number, initialOdometer: number) => Promise<void>;
@@ -53,6 +61,10 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Theme & Language States
+  const [language, setLanguageState] = useState<'tr' | 'en'>(appLanguage.startsWith('tr') ? 'tr' : 'en');
+  const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
+
   // Load initial data from AsyncStorage
   useEffect(() => {
     const loadData = async () => {
@@ -62,6 +74,27 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const storedReminders = await AsyncStorage.getItem('@reminders');
         const storedSelectedId = await AsyncStorage.getItem('@selected_vehicle_id');
         const storedOnboarding = await AsyncStorage.getItem('@onboarding_completed');
+        const storedLanguage = await AsyncStorage.getItem('@app_language');
+        const storedTheme = await AsyncStorage.getItem('@app_theme');
+
+        if (storedLanguage) {
+          const lang = storedLanguage as 'tr' | 'en';
+          setLanguageState(lang);
+          setAppLanguage(lang);
+        } else {
+          const lang = appLanguage.startsWith('tr') ? 'tr' : 'en';
+          setLanguageState(lang);
+          setAppLanguage(lang);
+        }
+
+        if (storedTheme) {
+          const th = storedTheme as 'dark' | 'light';
+          setThemeState(th);
+          setThemeColors(th);
+        } else {
+          setThemeState('dark');
+          setThemeColors('dark');
+        }
 
         if (storedOnboarding === 'true') {
           setHasCompletedOnboarding(true);
@@ -304,6 +337,18 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const setLanguage = async (lang: 'tr' | 'en') => {
+    setLanguageState(lang);
+    setAppLanguage(lang);
+    await AsyncStorage.setItem('@app_language', lang);
+  };
+
+  const setTheme = async (newTheme: 'dark' | 'light') => {
+    setThemeState(newTheme);
+    setThemeColors(newTheme);
+    await AsyncStorage.setItem('@app_theme', newTheme);
+  };
+
   return (
     <VehicleContext.Provider
       value={{
@@ -313,6 +358,10 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         selectedVehicleId,
         selectedVehicle,
         isLoading,
+        language,
+        theme,
+        setLanguage,
+        setTheme,
         addVehicle,
         updateVehicle,
         deleteVehicle,
