@@ -26,5 +26,8 @@
    - `useEffect(() => { ... }, [counter])` -> Diziye `counter` verilirse, o her değiştiğinde bu fonksiyon tetiklenir (`didUpdateWidget` gibi).
    - `useEffect(() => { return () => { ... } }, [])` -> `return` edilen fonksiyon bileşen ekrandan kaldırılırken tetiklenir (`dispose` gibi).
 
-
-
+## Ders 6: Expo Go Kısıtlamaları (JS Kodları vs Native Varlıklar)
+1. Expo Go, telefonunuza marketten indirdiğiniz hazır bir "kabuk" (shell) uygulamadır.
+2. JS/TS kodlarında yaptığımız değişiklikler (yazı tipi, yeni ekranlar, butonlar, renkler) Metro sunucusu üzerinden "Hot Reload" ile anında telefonunuza akar.
+3. Ancak native ayarlar (Uygulama İkonu, Açılış Ekranı (Splash Screen), Paket Adı (Bundle ID) vb.) cihazın işletim sistemine gömülen native kaynaklardır.
+4. Expo Go, kendi telefon ikonu ve boot ekranını değiştiremez. Kendi özel logonuzu telefonun ana ekranında görmek için, uygulamayı EAS Build (`eas build`) kullanarak APK olarak derleyip telefona kurmanız gerekir.
