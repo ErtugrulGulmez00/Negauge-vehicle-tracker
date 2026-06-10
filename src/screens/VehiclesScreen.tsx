@@ -22,13 +22,13 @@ const getMaterialIconName = (iconName: string) => {
       return 'motorbike';
     case 'suv':
     case 'car-suv':
-      return 'car-suv';
+      return 'jeep';
     case 'van':
     case 'van-utility':
-      return 'van-utility';
+      return 'truck-delivery';
     case 'truck':
     case 'truck-trailer':
-      return 'truck-trailer';
+      return 'truck';
     default:
       return 'car';
   }
@@ -426,7 +426,7 @@ export const VehiclesScreen: React.FC = () => {
                   key={option.name}
                   style={[
                     styles.iconButton,
-                    selectedIcon === option.name && { borderColor: selectedColor, backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9' },
+                    selectedIcon === option.name && { borderColor: selectedColor, backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9', borderWidth: 2 },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -777,23 +777,26 @@ const getStyles = (theme: 'dark' | 'light') => {
     },
     iconContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      marginHorizontal: -4,
       marginBottom: 20,
     },
     iconButton: {
-      flex: 1,
-      height: 70,
-      backgroundColor: colors.cardBackground,
-      borderWidth: 1,
+      width: '46%',
+      flexGrow: 1,
+      height: 50,
+      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
+      borderWidth: 1.5,
       borderColor: colors.cardBorder,
       borderRadius: 12,
-      justifyContent: 'center',
+      flexDirection: 'row',
       alignItems: 'center',
-      marginHorizontal: 4,
+      paddingHorizontal: 12,
+      margin: 4,
     },
     iconText: {
-      fontSize: 11,
-      marginTop: 4,
+      fontSize: 12,
+      marginLeft: 8,
     },
     colorContainer: {
       flexDirection: 'row',
