@@ -21,7 +21,19 @@ export const RemindersScreen: React.FC = () => {
     setReminderToEdit(reminder);
     setTitle(reminder.title);
     setType(reminder.type);
-    setTargetDate(reminder.targetDate || '');
+    if (reminder.type === 'date' && reminder.targetDate) {
+      if (reminder.targetDate.includes(' ')) {
+        const parts = reminder.targetDate.split(' ');
+        setTargetDate(parts[0]);
+        setTargetTime(parts[1]);
+      } else {
+        setTargetDate(reminder.targetDate);
+        setTargetTime('');
+      }
+    } else {
+      setTargetDate(reminder.targetDate || '');
+      setTargetTime('');
+    }
     setTargetOdometer(reminder.targetOdometer ? String(reminder.targetOdometer) : '');
     setShowAddForm(true);
   };
@@ -30,6 +42,7 @@ export const RemindersScreen: React.FC = () => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'date' | 'odometer'>('date');
   const [targetDate, setTargetDate] = useState('');
+  const [targetTime, setTargetTime] = useState('');
   const [targetOdometer, setTargetOdometer] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -124,6 +137,7 @@ export const RemindersScreen: React.FC = () => {
     setType(preset.type);
     
     const today = new Date();
+    setTargetTime('');
     
     if (preset.type === 'date') {
       let calcDateStr = '';
@@ -194,7 +208,11 @@ export const RemindersScreen: React.FC = () => {
           break;
         }
         case 'otopark': {
-          calcDateStr = today.toISOString().split('T')[0];
+          calcDateStr = getLocalDateString(today);
+          const hourLater = new Date(today.getTime() + 60 * 60 * 1000);
+          const hh = String(hourLater.getHours()).padStart(2, '0');
+          const mm = String(hourLater.getMinutes()).padStart(2, '0');
+          setTargetTime(`${hh}:${mm}`);
           break;
         }
         default: {
@@ -245,6 +263,12 @@ export const RemindersScreen: React.FC = () => {
       if (!targetDate.trim() || !dateRegex.test(targetDate)) {
         newErrors.targetDate = t('exp_error_date');
       }
+      if (targetTime.trim()) {
+        const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(targetTime.trim())) {
+          newErrors.targetTime = language === 'tr' ? 'Format geçersiz (SS:DK).' : 'Invalid format (HH:MM).';
+        }
+      }
     } else {
       if (!targetOdometer.trim() || isNaN(Number(targetOdometer)) || Number(targetOdometer) <= 0) {
         newErrors.targetOdometer = t('rem_error_target_km');
@@ -261,12 +285,16 @@ export const RemindersScreen: React.FC = () => {
     if (!selectedVehicle) return;
     if (!validate()) return;
 
+    const finalDate = type === 'date' 
+      ? (targetTime.trim() ? `${targetDate.trim()} ${targetTime.trim()}` : targetDate.trim())
+      : undefined;
+
     if (reminderToEdit) {
       await updateReminder({
         ...reminderToEdit,
         title: title.trim(),
         type,
-        targetDate: type === 'date' ? targetDate : undefined,
+        targetDate: finalDate,
         targetOdometer: type === 'odometer' ? Number(targetOdometer) : undefined,
       });
     } else {
@@ -274,13 +302,14 @@ export const RemindersScreen: React.FC = () => {
         vehicleId: selectedVehicle.id,
         title: title.trim(),
         type,
-        targetDate: type === 'date' ? targetDate : undefined,
+        targetDate: finalDate,
         targetOdometer: type === 'odometer' ? Number(targetOdometer) : undefined,
       });
     }
 
     setTitle('');
     setTargetDate('');
+    setTargetTime('');
     setTargetOdometer('');
     setReminderToEdit(null);
     setShowAddForm(false);
@@ -312,8 +341,16 @@ export const RemindersScreen: React.FC = () => {
     if (!selectedVehicle || reminder.isCompleted) return false;
     
     if (reminder.type === 'date' && reminder.targetDate) {
-      const today = getLocalDateString(); // YYYY-MM-DD
-      return today >= reminder.targetDate;
+      if (reminder.targetDate.includes(' ')) {
+        const [datePart, timePart] = reminder.targetDate.split(' ');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        const targetDateTime = new Date(year, month - 1, day, hours, minutes);
+        return new Date() >= targetDateTime;
+      } else {
+        const today = getLocalDateString(); // YYYY-MM-DD
+        return today >= reminder.targetDate;
+      }
     }
     
     if (reminder.type === 'odometer' && reminder.targetOdometer) {
@@ -366,6 +403,7 @@ export const RemindersScreen: React.FC = () => {
                   setReminderToEdit(null);
                   setTitle('');
                   setTargetDate('');
+                  setTargetTime('');
                   setTargetOdometer('');
                 }}
               >
@@ -434,9 +472,12 @@ export const RemindersScreen: React.FC = () => {
 
             {/* Type Selector Toggle */}
             <Text style={styles.sectionLabel}>{t('rem_type')}</Text>
-            <View style={styles.toggleContainer}>
+            <View style={styles.toggleContainerV}>
               <TouchableOpacity
-                style={[styles.toggleBtn, type === 'date' && styles.toggleBtnActive]}
+                style={[
+                  styles.toggleBtnV,
+                  type === 'date' ? styles.toggleBtnVActive : { borderColor: currentColors.cardBorder }
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   setType('date');
@@ -444,13 +485,25 @@ export const RemindersScreen: React.FC = () => {
               >
                 <Ionicons
                   name="calendar-outline"
-                  size={18}
+                  size={20}
                   color={type === 'date' ? '#0F172A' : currentColors.textSecondary}
+                  style={{ marginRight: 10 }}
                 />
-                <Text style={[styles.toggleText, type === 'date' && styles.toggleTextActive]}>{t('rem_type_date')}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.toggleTextV, type === 'date' && styles.toggleTextVActive]}>
+                    {t('rem_type_date')}
+                  </Text>
+                </View>
+                {type === 'date' && (
+                  <Ionicons name="checkmark-circle" size={20} color="#0F172A" />
+                )}
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.toggleBtn, type === 'odometer' && styles.toggleBtnActive]}
+                style={[
+                  styles.toggleBtnV,
+                  type === 'odometer' ? styles.toggleBtnVActive : { borderColor: currentColors.cardBorder }
+                ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   setType('odometer');
@@ -458,21 +511,42 @@ export const RemindersScreen: React.FC = () => {
               >
                 <Ionicons
                   name="speedometer-outline"
-                  size={18}
+                  size={20}
                   color={type === 'odometer' ? '#0F172A' : currentColors.textSecondary}
+                  style={{ marginRight: 10 }}
                 />
-                <Text style={[styles.toggleText, type === 'odometer' && styles.toggleTextActive]}>{t('rem_type_km')}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.toggleTextV, type === 'odometer' && styles.toggleTextVActive]}>
+                    {t('rem_type_km')}
+                  </Text>
+                </View>
+                {type === 'odometer' && (
+                  <Ionicons name="checkmark-circle" size={20} color="#0F172A" />
+                )}
               </TouchableOpacity>
             </View>
 
             {type === 'date' ? (
-              <Input
-                label={`${t('rem_target_date')} (YYYY-MM-DD) *`}
-                placeholder="YYYY-MM-DD"
-                value={targetDate}
-                onChangeText={setTargetDate}
-                error={errors.targetDate}
-              />
+              <View style={styles.dateTimeRow}>
+                <View style={{ flex: 2, marginRight: 12 }}>
+                  <Input
+                    label={`${t('rem_target_date')} (YYYY-MM-DD) *`}
+                    placeholder="YYYY-MM-DD"
+                    value={targetDate}
+                    onChangeText={setTargetDate}
+                    error={errors.targetDate}
+                  />
+                </View>
+                <View style={{ flex: 1.2 }}>
+                  <Input
+                    label={language === 'tr' ? 'Saat (SS:DK - İst.)' : 'Time (HH:MM - Opt.)'}
+                    placeholder="HH:MM"
+                    value={targetTime}
+                    onChangeText={setTargetTime}
+                    error={errors.targetTime}
+                  />
+                </View>
+              </View>
             ) : (
               <Input
                 label={`${t('rem_target_km')} *`}
@@ -633,34 +707,36 @@ const getStyles = (theme: 'dark' | 'light') => {
       color: colors.textSecondary,
       marginBottom: 10,
     },
-    toggleContainer: {
-      flexDirection: 'row',
-      backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9',
-      borderRadius: 12,
-      padding: 4,
+    toggleContainerV: {
+      flexDirection: 'column',
       marginBottom: 20,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
     },
-    toggleBtn: {
-      flex: 1,
-      height: 40,
+    toggleBtnV: {
       flexDirection: 'row',
-      justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
+      marginBottom: 10,
     },
-    toggleBtnActive: {
+    toggleBtnVActive: {
       backgroundColor: colors.primary,
+      borderColor: colors.primary,
     },
-    toggleText: {
+    toggleTextV: {
       fontSize: 13,
       fontWeight: '600',
-      marginLeft: 6,
+      color: colors.textSecondary,
     },
-    toggleTextActive: {
+    toggleTextVActive: {
       color: '#0F172A',
       fontWeight: '700',
+    },
+    dateTimeRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
     },
     submitBtn: {
       marginTop: 10,
