@@ -12,12 +12,16 @@
       "backgroundColor": "#0B0F19"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ertugrulgulmez.otobutcem"
     },
     "android": {
+      "package": "com.ertugrulgulmez.otobutcem",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0F19",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#0B0F19"
       },
       "predictiveBackGestureEnabled": false
     },

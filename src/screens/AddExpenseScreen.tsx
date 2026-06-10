@@ -54,6 +54,8 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
     { type: 'insurance', label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' },
     { type: 'tax', label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' },
     { type: 'wash', label: t('cat_wash'), icon: 'water-outline', color: '#10B981' },
+    { type: 'fine', label: t('cat_fine'), icon: 'alert-circle-outline', color: '#EF4444' },
+    { type: 'parking', label: t('cat_parking'), icon: 'location-outline', color: '#06B6D4' },
     { type: 'other', label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: currentColors.textSecondary },
   ];
 

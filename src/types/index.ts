@@ -9,7 +9,7 @@ export interface Vehicle {
   year?: number;
 }
 
-export type ExpenseCategory = 'fuel' | 'maintenance' | 'tax' | 'insurance' | 'wash' | 'other';
+export type ExpenseCategory = 'fuel' | 'maintenance' | 'tax' | 'insurance' | 'wash' | 'fine' | 'parking' | 'other';
 
 export interface Expense {
   id: string;

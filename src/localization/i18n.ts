@@ -124,6 +124,8 @@ const tr = {
   cat_insurance: 'Sigorta/Kasko',
   cat_tax: 'Vergi/Harç',
   cat_wash: 'Temizlik/Yıkama',
+  cat_fine: 'Trafik Cezası',
+  cat_parking: 'Otopark',
   cat_other: 'Diğer',
 
   // Analytics
@@ -312,6 +314,8 @@ const en: typeof tr = {
   cat_insurance: 'Insurance',
   cat_tax: 'Tax',
   cat_wash: 'Wash',
+  cat_fine: 'Traffic Fine',
+  cat_parking: 'Parking',
   cat_other: 'Other',
 
   // Analytics

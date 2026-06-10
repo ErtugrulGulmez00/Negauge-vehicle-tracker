@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
+import { DonutChart } from '../components/DonutChart';
 import { ExpenseCategory } from '../types';
 import { t, getCurrencySymbol, getShortMonthName } from '../localization/i18n';
 
@@ -83,6 +84,8 @@ export const AnalyticsScreen: React.FC = () => {
       { type: 'insurance', label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' },
       { type: 'tax', label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' },
       { type: 'wash', label: t('cat_wash'), icon: 'water-outline', color: '#10B981' },
+      { type: 'fine', label: t('cat_fine'), icon: 'alert-circle-outline', color: '#EF4444' },
+      { type: 'parking', label: t('cat_parking'), icon: 'location-outline', color: '#06B6D4' },
       { type: 'other', label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: currentColors.textSecondary },
     ];
 
@@ -197,6 +200,19 @@ export const AnalyticsScreen: React.FC = () => {
             {/* Category Distribution Chart */}
             <Card style={styles.chartCard}>
               <Text style={styles.chartTitle}>{t('an_category_breakdown')}</Text>
+              
+              <DonutChart
+                data={categoryData.map(c => ({
+                  name: c.label,
+                  amount: c.amount,
+                  percentage: c.percentage,
+                  color: c.color,
+                }))}
+                totalAmount={analyticsSummary.total}
+                currencySymbol={getCurrencySymbol()}
+                theme={theme}
+              />
+
               <View style={styles.breakdownList}>
                 {categoryData.map(cat => (
                   <View key={cat.type} style={styles.breakdownRow}>
