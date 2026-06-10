@@ -156,29 +156,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Modern Greeting & Active Vehicle Pill (Centered Title) */}
+        {/* Modern Greeting (Centered Title) */}
         <View style={styles.headerWelcomeRow}>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.welcomeSubtitle}>Negauge</Text>
             <Text style={styles.welcomeTitle}>{t('tab_dashboard')}</Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={onNavigateToVehicles}
-            style={[
-              styles.miniVehiclePill,
-              {
-                borderColor: selectedVehicle.color + '40',
-                backgroundColor: selectedVehicle.color + '15',
-              }
-            ]}
-          >
-            <View style={[styles.miniIconWrapper, { backgroundColor: selectedVehicle.color }]}>
-              <Ionicons name={selectedVehicle.icon as any} size={11} color="#0F172A" />
-            </View>
-            <Text style={[styles.miniVehicleText, { color: selectedVehicle.color }]}>{selectedVehicle.name}</Text>
-            <Ionicons name="chevron-forward" size={12} color={selectedVehicle.color} style={{ marginLeft: 2 }} />
-          </TouchableOpacity>
         </View>
 
         {/* Hero Card: Monthly Spend */}
