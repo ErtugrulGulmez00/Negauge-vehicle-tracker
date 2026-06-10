@@ -250,7 +250,24 @@ export const RemindersScreen: React.FC = () => {
           break;
       }
       setTargetOdometer(String(calcKm));
-      setTargetDate('');
+    }
+  };
+
+  const handleQuickTime = (minutesToAdd: number, defaultTitle: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const target = new Date(Date.now() + minutesToAdd * 60 * 1000);
+    
+    // Set date
+    setTargetDate(getLocalDateString(target));
+    
+    // Set time
+    const hh = String(target.getHours()).padStart(2, '0');
+    const mm = String(target.getMinutes()).padStart(2, '0');
+    setTargetTime(`${hh}:${mm}`);
+    
+    // Set default title if empty
+    if (!title.trim()) {
+      setTitle(defaultTitle);
     }
   };
 
@@ -476,7 +493,7 @@ export const RemindersScreen: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.toggleBtnV,
-                  type === 'date' ? styles.toggleBtnVActive : { borderColor: currentColors.cardBorder }
+                  type === 'date' && styles.toggleBtnVActive
                 ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -485,24 +502,19 @@ export const RemindersScreen: React.FC = () => {
               >
                 <Ionicons
                   name="calendar-outline"
-                  size={20}
+                  size={16}
                   color={type === 'date' ? '#0F172A' : currentColors.textSecondary}
-                  style={{ marginRight: 10 }}
+                  style={{ marginRight: 6 }}
                 />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.toggleTextV, type === 'date' && styles.toggleTextVActive]}>
-                    {t('rem_type_date')}
-                  </Text>
-                </View>
-                {type === 'date' && (
-                  <Ionicons name="checkmark-circle" size={20} color="#0F172A" />
-                )}
+                <Text style={[styles.toggleTextV, type === 'date' && styles.toggleTextVActive]}>
+                  {t('rem_type_date')}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.toggleBtnV,
-                  type === 'odometer' ? styles.toggleBtnVActive : { borderColor: currentColors.cardBorder }
+                  type === 'odometer' && styles.toggleBtnVActive
                 ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -511,40 +523,76 @@ export const RemindersScreen: React.FC = () => {
               >
                 <Ionicons
                   name="speedometer-outline"
-                  size={20}
+                  size={16}
                   color={type === 'odometer' ? '#0F172A' : currentColors.textSecondary}
-                  style={{ marginRight: 10 }}
+                  style={{ marginRight: 6 }}
                 />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.toggleTextV, type === 'odometer' && styles.toggleTextVActive]}>
-                    {t('rem_type_km')}
-                  </Text>
-                </View>
-                {type === 'odometer' && (
-                  <Ionicons name="checkmark-circle" size={20} color="#0F172A" />
-                )}
+                <Text style={[styles.toggleTextV, type === 'odometer' && styles.toggleTextVActive]}>
+                  {t('rem_type_km')}
+                </Text>
               </TouchableOpacity>
             </View>
 
             {type === 'date' ? (
-              <View style={styles.dateTimeRow}>
-                <View style={{ flex: 2, marginRight: 12 }}>
-                  <Input
-                    label={`${t('rem_target_date')} (YYYY-MM-DD) *`}
-                    placeholder="YYYY-MM-DD"
-                    value={targetDate}
-                    onChangeText={setTargetDate}
-                    error={errors.targetDate}
-                  />
+              <View>
+                <View style={styles.dateTimeRow}>
+                  <View style={{ flex: 2, marginRight: 12 }}>
+                    <Input
+                      label={`${t('rem_target_date')} (YYYY-MM-DD) *`}
+                      placeholder="YYYY-MM-DD"
+                      value={targetDate}
+                      onChangeText={setTargetDate}
+                      error={errors.targetDate}
+                    />
+                  </View>
+                  <View style={{ flex: 1.2 }}>
+                    <Input
+                      label={language === 'tr' ? 'Saat (SS:DK - İst.)' : 'Time (HH:MM - Opt.)'}
+                      placeholder="HH:MM"
+                      value={targetTime}
+                      onChangeText={setTargetTime}
+                      error={errors.targetTime}
+                    />
+                  </View>
                 </View>
-                <View style={{ flex: 1.2 }}>
-                  <Input
-                    label={language === 'tr' ? 'Saat (SS:DK - İst.)' : 'Time (HH:MM - Opt.)'}
-                    placeholder="HH:MM"
-                    value={targetTime}
-                    onChangeText={setTargetTime}
-                    error={errors.targetTime}
-                  />
+
+                {/* Quick Time Selector Chips */}
+                <View style={styles.quickTimeContainer}>
+                  <Text style={styles.quickTimeLabel}>
+                    {language === 'tr' ? 'Hızlı Süre Ekle:' : 'Quick Duration:'}
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickTimeScroll}>
+                    <TouchableOpacity
+                      style={styles.quickTimeChip}
+                      onPress={() => handleQuickTime(30, language === 'tr' ? 'Otopark Süresi (30 dk)' : 'Parking Time (30 min)')}
+                    >
+                      <Text style={styles.quickTimeChipText}>+30 Dk</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickTimeChip}
+                      onPress={() => handleQuickTime(60, language === 'tr' ? 'Otopark Süresi (1 sa)' : 'Parking Time (1 hr)')}
+                    >
+                      <Text style={styles.quickTimeChipText}>+1 Sa</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickTimeChip}
+                      onPress={() => handleQuickTime(120, language === 'tr' ? 'Otopark Süresi (2 sa)' : 'Parking Time (2 hr)')}
+                    >
+                      <Text style={styles.quickTimeChipText}>+2 Sa</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickTimeChip}
+                      onPress={() => handleQuickTime(240, language === 'tr' ? 'Otopark Süresi (4 sa)' : 'Parking Time (4 hr)')}
+                    >
+                      <Text style={styles.quickTimeChipText}>+4 Sa</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.quickTimeChip}
+                      onPress={() => handleQuickTime(1440, language === 'tr' ? 'Yarın Bu Saat' : 'Tomorrow This Time')}
+                    >
+                      <Text style={styles.quickTimeChipText}>{language === 'tr' ? 'Yarın' : 'Tomorrow'}</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
                 </View>
               </View>
             ) : (
@@ -708,31 +756,62 @@ const getStyles = (theme: 'dark' | 'light') => {
       marginBottom: 10,
     },
     toggleContainerV: {
-      flexDirection: 'column',
+      flexDirection: 'row',
+      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      borderRadius: 12,
+      padding: 4,
       marginBottom: 20,
     },
     toggleBtnV: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 12,
-      borderWidth: 1.5,
-      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
-      marginBottom: 10,
+      justifyContent: 'center',
+      paddingVertical: 10,
+      borderRadius: 9,
+      backgroundColor: 'transparent',
+      borderWidth: 0,
     },
     toggleBtnVActive: {
       backgroundColor: colors.primary,
-      borderColor: colors.primary,
     },
     toggleTextV: {
       fontSize: 13,
-      fontWeight: '600',
+      fontWeight: '700',
       color: colors.textSecondary,
     },
     toggleTextVActive: {
       color: '#0F172A',
+      fontWeight: '800',
+    },
+    quickTimeContainer: {
+      marginTop: 12,
+      marginBottom: 16,
+    },
+    quickTimeLabel: {
+      fontSize: 11,
       fontWeight: '700',
+      color: colors.textSecondary,
+      marginBottom: 8,
+    },
+    quickTimeScroll: {
+      paddingRight: 10,
+    },
+    quickTimeChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#E2E8F0',
+      marginRight: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    quickTimeChipText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textPrimary,
     },
     dateTimeRow: {
       flexDirection: 'row',
