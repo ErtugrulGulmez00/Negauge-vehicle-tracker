@@ -3,6 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Vehicle, Expense, Reminder, ExpenseCategory } from '../types';
 import { setAppLanguage, appLanguage } from '../localization/i18n';
 import { encodeBase64, decodeBase64 } from '../utils/backup';
+import { 
+  scheduleReminderNotification, 
+  cancelReminderNotification, 
+  triggerOdometerNotification,
+  requestNotificationPermissions 
+} from '../utils/notifications';
 
 interface VehicleContextType {
   vehicles: Vehicle[];
@@ -114,6 +120,7 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
             await AsyncStorage.setItem('@selected_vehicle_id', parsed[0].id);
           }
         }
+        await requestNotificationPermissions();
       } catch (error) {
         console.error('Failed to load data from AsyncStorage', error);
       } finally {
@@ -178,18 +185,51 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const checkOdometerReminders = async (vehicleId: string, currentOdo: number, vehicleName: string, currentReminders: Reminder[]) => {
+    const activeOdoReminders = currentReminders.filter(
+      r => r.vehicleId === vehicleId && r.type === 'odometer' && !r.isCompleted && r.targetOdometer !== undefined
+    );
+    
+    if (activeOdoReminders.length === 0) return;
+
+    let remindersChanged = false;
+    const updatedReminders = currentReminders.map(r => {
+      if (r.vehicleId === vehicleId && r.type === 'odometer' && !r.isCompleted && r.targetOdometer !== undefined && currentOdo >= r.targetOdometer) {
+        remindersChanged = true;
+        triggerOdometerNotification(r, vehicleName).catch(err => console.error(err));
+        return { ...r, isCompleted: true };
+      }
+      return r;
+    });
+
+    if (remindersChanged) {
+      await saveReminders(updatedReminders);
+    }
+  };
+
   const updateVehicle = async (updatedVehicle: Vehicle) => {
+    const oldVehicle = vehicles.find(v => v.id === updatedVehicle.id);
     const updated = vehicles.map(v => (v.id === updatedVehicle.id ? updatedVehicle : v));
     await saveVehicles(updated);
+
+    if (oldVehicle && updatedVehicle.currentOdometer > oldVehicle.currentOdometer) {
+      await checkOdometerReminders(updatedVehicle.id, updatedVehicle.currentOdometer, updatedVehicle.name, reminders);
+    }
   };
 
   const deleteVehicle = async (id: string) => {
     const updatedVehicles = vehicles.filter(v => v.id !== id);
     await saveVehicles(updatedVehicles);
 
-    // Clean up related expenses and reminders
     const updatedExpenses = expenses.filter(e => e.vehicleId !== id);
     await saveExpenses(updatedExpenses);
+
+    const vehicleReminders = reminders.filter(r => r.vehicleId === id);
+    for (const r of vehicleReminders) {
+      if (r.notificationId) {
+        await cancelReminderNotification(r.notificationId);
+      }
+    }
 
     const updatedReminders = reminders.filter(r => r.vehicleId !== id);
     await saveReminders(updatedReminders);
@@ -266,26 +306,80 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // --- Reminder Actions ---
   const addReminder = async (reminderData: Omit<Reminder, 'id' | 'isCompleted'>) => {
-    const newReminder: Reminder = {
+    let notificationId: string | undefined = undefined;
+    const vehicle = vehicles.find(v => v.id === reminderData.vehicleId);
+    const tempReminder: Reminder = {
       ...reminderData,
       id: generateId(),
       isCompleted: false,
+    };
+    
+    if (vehicle && tempReminder.type === 'date' && tempReminder.targetDate) {
+      notificationId = await scheduleReminderNotification(tempReminder, vehicle.name);
+    }
+    
+    const newReminder: Reminder = {
+      ...tempReminder,
+      notificationId,
     };
     const updated = [...reminders, newReminder];
     await saveReminders(updated);
   };
 
   const updateReminder = async (updatedReminder: Reminder) => {
-    const updated = reminders.map(r => (r.id === updatedReminder.id ? updatedReminder : r));
+    const oldReminder = reminders.find(r => r.id === updatedReminder.id);
+    let notificationId = updatedReminder.notificationId;
+    const vehicle = vehicles.find(v => v.id === updatedReminder.vehicleId);
+    
+    if (oldReminder && vehicle) {
+      const dateChanged = oldReminder.targetDate !== updatedReminder.targetDate;
+      const statusChanged = oldReminder.isCompleted !== updatedReminder.isCompleted;
+      
+      if (dateChanged || statusChanged) {
+        if (oldReminder.notificationId) {
+          await cancelReminderNotification(oldReminder.notificationId);
+          notificationId = undefined;
+        }
+        
+        if (!updatedReminder.isCompleted && updatedReminder.type === 'date' && updatedReminder.targetDate) {
+          notificationId = await scheduleReminderNotification(updatedReminder, vehicle.name);
+        }
+      }
+    }
+    
+    const updated = reminders.map(r => (r.id === updatedReminder.id ? { ...updatedReminder, notificationId } : r));
     await saveReminders(updated);
   };
 
   const toggleReminder = async (id: string) => {
-    const updated = reminders.map(r => (r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
+    const oldReminder = reminders.find(r => r.id === id);
+    const vehicle = oldReminder ? vehicles.find(v => v.id === oldReminder.vehicleId) : null;
+    let notificationId = oldReminder?.notificationId;
+    
+    if (oldReminder && vehicle) {
+      const newIsCompleted = !oldReminder.isCompleted;
+      
+      if (newIsCompleted) {
+        if (oldReminder.notificationId) {
+          await cancelReminderNotification(oldReminder.notificationId);
+          notificationId = undefined;
+        }
+      } else {
+        if (oldReminder.type === 'date' && oldReminder.targetDate) {
+          notificationId = await scheduleReminderNotification({ ...oldReminder, isCompleted: false }, vehicle.name);
+        }
+      }
+    }
+    
+    const updated = reminders.map(r => (r.id === id ? { ...r, isCompleted: !r.isCompleted, notificationId } : r));
     await saveReminders(updated);
   };
 
   const deleteReminder = async (id: string) => {
+    const oldReminder = reminders.find(r => r.id === id);
+    if (oldReminder && oldReminder.notificationId) {
+      await cancelReminderNotification(oldReminder.notificationId);
+    }
     const updated = reminders.filter(r => r.id !== id);
     await saveReminders(updated);
   };

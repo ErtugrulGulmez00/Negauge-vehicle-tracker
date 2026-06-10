@@ -5,6 +5,7 @@ import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { DonutChart } from '../components/DonutChart';
+import { LineChart } from '../components/LineChart';
 import { ExpenseCategory } from '../types';
 import { t, getCurrencySymbol, getShortMonthName } from '../localization/i18n';
 
@@ -138,6 +139,33 @@ export const AnalyticsScreen: React.FC = () => {
       totalLiters: totalLiters.toFixed(0),
       totalDistance: totalDistance.toLocaleString(),
     };
+  }, [vehicleExpenses]);
+
+  // Fuel efficiency trend data points for LineChart (Feature 3)
+  const fuelEfficiencyTrend = useMemo(() => {
+    const fuelExpenses = vehicleExpenses
+      .filter(e => e.category === 'fuel' && e.liters && e.liters > 0)
+      .sort((a, b) => a.odometer - b.odometer);
+    
+    const trend: { label: string; value: number }[] = [];
+    
+    for (let i = 1; i < fuelExpenses.length; i++) {
+      const current = fuelExpenses[i];
+      const prev = fuelExpenses[i - 1];
+      const dist = current.odometer - prev.odometer;
+      
+      if (dist > 0 && current.liters && current.liters > 0) {
+        const consumption = (current.liters / dist) * 100;
+        const dateParts = current.date.split('-');
+        const dateLabel = dateParts.length >= 3 ? `${dateParts[2]}/${dateParts[1]}` : current.date;
+        trend.push({
+          label: dateLabel,
+          value: consumption
+        });
+      }
+    }
+    
+    return trend.slice(-6); // last 6 entries
   }, [vehicleExpenses]);
 
   if (!selectedVehicle) {
@@ -297,6 +325,19 @@ export const AnalyticsScreen: React.FC = () => {
                         ? `En az 2 yakıt dolumu temel alınarak, son ${fuelStats.totalDistance} KM boyunca tüketilen toplam ${fuelStats.totalLiters} litre yakıt ile hesaplanmıştır.` 
                         : `Calculated from total ${fuelStats.totalLiters} liters filled over the last ${fuelStats.totalDistance} KM using at least 2 fuel fill-ups.`)}
                   </Text>
+                  {fuelEfficiencyTrend.length > 0 && (
+                    <View style={{ marginTop: 18, borderTopWidth: 1, borderTopColor: currentColors.cardBorder, paddingTop: 16 }}>
+                      <Text style={styles.fuelChartTitle}>
+                        {language === 'tr' ? 'Son Tüketim Trendi' : 'Recent Consumption Trend'}
+                      </Text>
+                      <LineChart
+                        data={fuelEfficiencyTrend}
+                        unit={selectedVehicle.isElectric ? 'kWh/100km' : 'L/100km'}
+                        lineColor={selectedVehicle.color}
+                        theme={theme}
+                      />
+                    </View>
+                  )}
                 </View>
               ) : (
                 <View style={styles.fuelEmptyContent}>
@@ -554,6 +595,13 @@ const getStyles = (theme: 'dark' | 'light') => {
       color: colors.textMuted,
       textAlign: 'center',
       lineHeight: 18,
+    },
+    fuelChartTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      marginBottom: 8,
+      textAlign: 'center',
     },
     fuelEmptyContent: {
       alignItems: 'center',

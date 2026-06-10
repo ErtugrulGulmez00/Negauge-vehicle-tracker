@@ -802,6 +802,11 @@ export const VehiclesScreen: React.FC = () => {
               data={VEHICLE_CATALOG.filter(b => b.name.toLowerCase().includes(catalogSearch.toLowerCase()))}
               keyExtractor={item => item.name}
               contentContainerStyle={styles.modalListContent}
+              getItemLayout={(data, index) => ({
+                length: 53,
+                offset: 53 * index,
+                index
+              })}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalItemRow}
@@ -848,6 +853,11 @@ export const VehiclesScreen: React.FC = () => {
               data={selectedCatalogBrand.models.filter(m => m.toLowerCase().includes(catalogSearch.toLowerCase()))}
               keyExtractor={item => item}
               contentContainerStyle={styles.modalListContent}
+              getItemLayout={(data, index) => ({
+                length: 53,
+                offset: 53 * index,
+                index
+              })}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalItemRow}

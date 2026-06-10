@@ -10,11 +10,18 @@ import { Reminder } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t, TranslationKey } from '../localization/i18n';
 import { getLocalDateString } from '../utils/date';
+import { requestNotificationPermissions } from '../utils/notifications';
 
 export const RemindersScreen: React.FC = () => {
   const { selectedVehicle, reminders, addReminder, updateReminder, toggleReminder, deleteReminder, language, theme } = useVehicles();
   const [showAddForm, setShowAddForm] = useState(false);
   const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
+
+  useEffect(() => {
+    if (showAddForm) {
+      requestNotificationPermissions().catch(err => console.error(err));
+    }
+  }, [showAddForm]);
 
   const handleEditClick = (reminder: Reminder) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});

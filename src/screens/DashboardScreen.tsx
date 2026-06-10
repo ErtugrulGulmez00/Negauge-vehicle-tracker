@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
@@ -11,6 +11,71 @@ import * as Haptics from 'expo-haptics';
 import { t, getCurrencySymbol } from '../localization/i18n';
 import { getLocalMonthString, getLocalDateDaysAgo } from '../utils/date';
 import { VehicleVisual } from '../components/VehicleVisual';
+import { exportExpensesToCSV } from '../utils/export';
+
+// Memoized Expense Row for list performance optimization
+const MemoizedExpenseRow = React.memo<{
+  item: Expense;
+  onEdit: (expense: Expense) => void;
+  onDelete: (id: string) => void;
+  theme: 'dark' | 'light';
+  fuelCons: { [id: string]: string };
+  selectedVehicle: any;
+  language: string;
+  getCategoryDetails: (cat: string) => { label: string; icon: string; color: string };
+  getCurrencySymbol: () => string;
+  colors: any;
+  rowStyles: any;
+}>(({ item, onEdit, onDelete, theme, fuelCons, selectedVehicle, language, getCategoryDetails, getCurrencySymbol, colors, rowStyles }) => {
+  const cat = getCategoryDetails(item.category);
+  return (
+    <Card style={rowStyles.expenseItem}>
+      <View style={rowStyles.expenseLeft}>
+        <View style={[rowStyles.categoryIcon, { backgroundColor: (item.category === 'fuel' && selectedVehicle?.isElectric ? '#10B981' : cat.color) + '15' }]}>
+          <Ionicons 
+            name={(item.category === 'fuel' && selectedVehicle?.isElectric ? 'flash-outline' : cat.icon) as any} 
+            size={18} 
+            color={item.category === 'fuel' && selectedVehicle?.isElectric ? '#10B981' : cat.color} 
+          />
+        </View>
+        <View style={rowStyles.expenseDetails}>
+          <Text style={rowStyles.expenseLabelText}>
+            {item.category === 'fuel' && selectedVehicle?.isElectric
+              ? (language === 'tr' ? 'Şarj (Elektrik)' : 'Charging (EV)')
+              : cat.label}
+          </Text>
+          {item.notes ? (
+            <Text style={rowStyles.expenseNotes} numberOfLines={1}>
+              {item.notes}
+            </Text>
+          ) : null}
+          <Text style={rowStyles.expenseMeta}>
+            {item.date} • {item.odometer.toLocaleString()} KM{item.category === 'fuel' && item.liters ? ` • ${item.liters} ${selectedVehicle?.isElectric ? 'kWh' : 'Lt'}` : ''}{fuelCons[item.id] ? ` • ${fuelCons[item.id]}` : ''}
+          </Text>
+        </View>
+      </View>
+      <View style={rowStyles.expenseRight}>
+        <Text style={rowStyles.expenseAmount}>
+          {getCurrencySymbol()}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        </Text>
+        <View style={rowStyles.actionRow}>
+          <TouchableOpacity
+            onPress={() => onEdit(item)}
+            style={rowStyles.editBtn}
+          >
+            <Ionicons name="create-outline" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => onDelete(item.id)}
+            style={rowStyles.trashBtn}
+          >
+            <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Card>
+  );
+});
 
 interface DashboardScreenProps {
   onAddExpensePress: () => void;
@@ -28,6 +93,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [showOdoEdit, setShowOdoEdit] = useState(false);
   const [budgetVal, setBudgetVal] = useState('');
   const [showBudgetEdit, setShowBudgetEdit] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDateRange, setSelectedDateRange] = useState<'all' | '1m' | '3m' | '6m'>('all');
+  const [isExporting, setIsExporting] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -79,6 +149,43 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     
     return map;
   }, [vehicleExpenses, selectedVehicle]);
+
+  const filteredExpenses = useMemo(() => {
+    return vehicleExpenses.filter(e => {
+      if (searchText.trim()) {
+        const query = searchText.toLowerCase();
+        const matchesNote = e.notes?.toLowerCase().includes(query);
+        const matchesOdo = String(e.odometer).includes(query);
+        const matchesAmount = String(e.amount).includes(query);
+        const matchesDate = e.date.includes(query);
+        const catDetails = getCategoryDetails(e.category);
+        const matchesCategory = catDetails.label.toLowerCase().includes(query);
+        
+        if (!matchesNote && !matchesOdo && !matchesAmount && !matchesDate && !matchesCategory) {
+          return false;
+        }
+      }
+      if (selectedCategory && selectedCategory !== 'all' && e.category !== selectedCategory) {
+        return false;
+      }
+      if (selectedDateRange !== 'all') {
+        const today = new Date();
+        let limitDate = new Date();
+        if (selectedDateRange === '1m') {
+          limitDate.setMonth(today.getMonth() - 1);
+        } else if (selectedDateRange === '3m') {
+          limitDate.setMonth(today.getMonth() - 3);
+        } else if (selectedDateRange === '6m') {
+          limitDate.setMonth(today.getMonth() - 6);
+        }
+        const limitStr = limitDate.toISOString().split('T')[0];
+        if (e.date < limitStr) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [vehicleExpenses, searchText, selectedCategory, selectedDateRange, language]);
 
   // Calculations
   const stats = useMemo(() => {
@@ -148,6 +255,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   };
 
+  const handleExportCSV = async () => {
+    if (!selectedVehicle) return;
+    setIsExporting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    const success = await exportExpensesToCSV(filteredExpenses, selectedVehicle);
+    setIsExporting(false);
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
+  };
+
   const handleDeleteExpense = (id: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     Alert.alert(
@@ -179,6 +297,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         return { label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' };
       case 'wash':
         return { label: t('cat_wash'), icon: 'water-outline', color: '#10B981' };
+      case 'fine':
+        return { label: t('cat_fine'), icon: 'warning-outline', color: '#EF4444' };
+      case 'parking':
+        return { label: t('cat_parking'), icon: 'pin-outline', color: '#3B82F6' };
       default:
         return { label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: currentColors.textSecondary };
     }
@@ -438,7 +560,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Recent Activity List */}
         <View style={styles.listHeaderRow}>
           <Text style={styles.sectionTitle}>{t('db_recent_expenses')}</Text>
-          <Text style={styles.countText}>{t('db_count_records', { count: vehicleExpenses.length })}</Text>
+          {vehicleExpenses.length > 0 && (
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setShowHistoryModal(true);
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.viewAllText}>{language === 'tr' ? 'Tümünü Gör' : 'View All'}</Text>
+                <Ionicons name="chevron-forward" size={14} color={currentColors.primary} style={{ marginLeft: 2 }} />
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
         {vehicleExpenses.length === 0 ? (
@@ -504,6 +639,167 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
         )}
       </ScrollView>
+
+      {/* Search & Filter History Modal (Feature 5 & 7) */}
+      <Modal
+        visible={showHistoryModal}
+        animationType="slide"
+        onRequestClose={() => setShowHistoryModal(false)}
+      >
+        <View style={styles.historyModalContainer}>
+          {/* Modal Header */}
+          <View style={styles.historyModalHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setShowHistoryModal(false);
+              }}
+              style={styles.historyCloseButton}
+            >
+              <Ionicons name="close" size={24} color={currentColors.textPrimary} />
+            </TouchableOpacity>
+            
+            <Text style={styles.historyModalTitle}>
+              {language === 'tr' ? 'Harcama Geçmişi' : 'Expense History'}
+            </Text>
+            
+            <TouchableOpacity
+              onPress={handleExportCSV}
+              disabled={filteredExpenses.length === 0 || isExporting}
+              style={[
+                styles.historyExportButton,
+                filteredExpenses.length === 0 && { opacity: 0.5 }
+              ]}
+            >
+              <Ionicons name="share-outline" size={22} color={currentColors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Input */}
+          <View style={styles.historySearchWrapper}>
+            <Ionicons name="search-outline" size={18} color={currentColors.textSecondary} style={{ marginRight: 8 }} />
+            <TextInput
+              style={[styles.historySearchInput, { color: currentColors.textPrimary }]}
+              placeholder={language === 'tr' ? 'Detaylarda veya KM\'de ara...' : 'Search in details, KM...'}
+              placeholderTextColor={currentColors.textMuted}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            {searchText ? (
+              <TouchableOpacity onPress={() => setSearchText('')}>
+                <Ionicons name="close-circle" size={16} color={currentColors.textMuted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Date range selection */}
+          <View style={styles.historyDateSelectorRow}>
+            {(['all', '1m', '3m', '6m'] as const).map((range) => {
+              const label = range === 'all' 
+                ? (language === 'tr' ? 'Tümü' : 'All')
+                : range === '1m'
+                ? (language === 'tr' ? 'Son 1 Ay' : '1 Month')
+                : range === '3m'
+                ? (language === 'tr' ? 'Son 3 Ay' : '3 Months')
+                : (language === 'tr' ? 'Son 6 Ay' : '6 Months');
+              
+              return (
+                <TouchableOpacity
+                  key={range}
+                  style={[
+                    styles.historyDateButton,
+                    selectedDateRange === range && styles.historyDateButtonActive
+                  ]}
+                  onPress={() => setSelectedDateRange(range)}
+                >
+                  <Text style={[
+                    styles.historyDateText,
+                    selectedDateRange === range && styles.historyDateTextActive
+                  ]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Category Horizontal Pills */}
+          <View style={styles.historyCatContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.historyCatScroll}>
+              {(['all', 'fuel', 'maintenance', 'insurance', 'tax', 'wash', 'fine', 'parking', 'other'] as const).map((cat) => {
+                const label = cat === 'all' 
+                  ? (language === 'tr' ? 'Tüm Kategoriler' : 'All Categories')
+                  : cat === 'fuel'
+                  ? (selectedVehicle?.isElectric ? (language === 'tr' ? 'Şarj (EV)' : 'Charging') : t('cat_fuel'))
+                  : t(`cat_${cat}` as any);
+
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.historyCatPill,
+                      (selectedCategory === cat || (cat === 'all' && !selectedCategory)) && styles.historyCatPillActive
+                    ]}
+                    onPress={() => setSelectedCategory(cat === 'all' ? null : cat)}
+                  >
+                    <Text style={[
+                      styles.historyCatPillText,
+                      (selectedCategory === cat || (cat === 'all' && !selectedCategory)) && styles.historyCatPillTextActive
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* FlatList for performance (Feature 7) */}
+          <FlatList
+            data={filteredExpenses}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.historyFlatListContent}
+            initialNumToRender={15}
+            maxToRenderPerBatch={15}
+            windowSize={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            getItemLayout={(data, index) => ({
+              length: 84,
+              offset: 84 * index,
+              index
+            })}
+            renderItem={({ item }) => (
+              <MemoizedExpenseRow
+                item={item}
+                onEdit={(exp) => {
+                  setShowHistoryModal(false);
+                  onEditExpensePress(exp);
+                }}
+                onDelete={handleDeleteExpense}
+                theme={theme}
+                fuelCons={fuelConsumptions}
+                selectedVehicle={selectedVehicle}
+                language={language}
+                getCategoryDetails={getCategoryDetails}
+                getCurrencySymbol={getCurrencySymbol}
+                colors={currentColors}
+                rowStyles={styles}
+              />
+            )}
+            ListEmptyComponent={
+              <View style={styles.historyEmptyContainer}>
+                <Ionicons name="search-outline" size={48} color={currentColors.textMuted} style={{ marginBottom: 12 }} />
+                <Text style={styles.historyEmptyTitle}>
+                  {language === 'tr' ? 'Sonuç Bulunamadı' : 'No Results Found'}
+                </Text>
+                <Text style={styles.historyEmptySub}>
+                  {language === 'tr' ? 'Filtreleri veya arama kelimesini değiştirmeyi deneyin.' : 'Try changing filters or search terms.'}
+                </Text>
+              </View>
+            }
+          />
+        </View>
+      </Modal>
     </Animated.View>
   );
 };
@@ -1001,6 +1297,130 @@ const getStyles = (theme: 'dark' | 'light') => {
     budgetSetBtnText: {
       fontSize: 12,
       fontWeight: '700',
+    },
+    viewAllButton: {
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    viewAllText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    historyModalContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingTop: Platform.OS === 'ios' ? 48 : 20,
+    },
+    historyModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    historyModalTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    historyCloseButton: {
+      padding: 4,
+    },
+    historyExportButton: {
+      padding: 4,
+    },
+    historySearchWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F1F5F9',
+      marginHorizontal: 20,
+      marginVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      height: 40,
+    },
+    historySearchInput: {
+      flex: 1,
+      fontSize: 14,
+      paddingVertical: 8,
+    },
+    historyDateSelectorRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginHorizontal: 20,
+      marginBottom: 10,
+    },
+    historyDateButton: {
+      flex: 1,
+      paddingVertical: 6,
+      alignItems: 'center',
+      borderRadius: 8,
+      marginHorizontal: 4,
+      backgroundColor: theme === 'dark' ? '#1E293B40' : '#F1F5F940',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    historyDateButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    historyDateText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    historyDateTextActive: {
+      color: '#0F172A',
+    },
+    historyCatContainer: {
+      marginBottom: 12,
+    },
+    historyCatScroll: {
+      paddingHorizontal: 16,
+    },
+    historyCatPill: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      marginHorizontal: 4,
+      backgroundColor: colors.cardBackground,
+    },
+    historyCatPillActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    historyCatPillText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    historyCatPillTextActive: {
+      color: '#0F172A',
+    },
+    historyFlatListContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 40,
+    },
+    historyEmptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+    },
+    historyEmptyTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    historyEmptySub: {
+      fontSize: 12,
+      color: colors.textMuted,
+      textAlign: 'center',
     },
   });
   return memoizedStyles;

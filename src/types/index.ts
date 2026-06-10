@@ -33,4 +33,5 @@ export interface Reminder {
   targetDate?: string; // ISO string format YYYY-MM-DD
   targetOdometer?: number; // KM limit
   isCompleted: boolean;
+  notificationId?: string;
 }
