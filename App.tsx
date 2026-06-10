@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, SafeAreaView, Platform, StatusBar as RNStatusBa
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { VehicleProvider, useVehicles } from './src/context/VehicleContext';
-import { COLORS, DARK_COLORS, LIGHT_COLORS } from './src/theme/colors';
+import { DARK_COLORS, LIGHT_COLORS } from './src/theme/colors';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { VehiclesScreen } from './src/screens/VehiclesScreen';
 import { AddExpenseScreen } from './src/screens/AddExpenseScreen';
@@ -38,6 +38,7 @@ function MainAppContent() {
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | undefined>(undefined);
 
   const styles = getStyles(theme);
+  const colors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
   const handleTabChange = (tab: Tab) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -147,7 +148,7 @@ function MainAppContent() {
               <Ionicons
                 name={activeTab === 'dashboard' ? 'home' : 'home-outline'}
                 size={22}
-                color={activeTab === 'dashboard' ? COLORS.primary : COLORS.textSecondary}
+                color={activeTab === 'dashboard' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'dashboard' && styles.tabLabelActive]}>
                 {t('tab_dashboard')}
@@ -161,7 +162,7 @@ function MainAppContent() {
               <Ionicons
                 name={activeTab === 'vehicles' ? 'car' : 'car-outline'}
                 size={22}
-                color={activeTab === 'vehicles' ? COLORS.primary : COLORS.textSecondary}
+                color={activeTab === 'vehicles' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'vehicles' && styles.tabLabelActive]}>
                 {t('tab_vehicles')}
@@ -175,7 +176,7 @@ function MainAppContent() {
               <Ionicons
                 name={activeTab === 'analytics' ? 'analytics' : 'analytics-outline'}
                 size={22}
-                color={activeTab === 'analytics' ? COLORS.primary : COLORS.textSecondary}
+                color={activeTab === 'analytics' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'analytics' && styles.tabLabelActive]}>
                 {t('tab_analytics')}
@@ -190,7 +191,7 @@ function MainAppContent() {
                 <Ionicons
                   name={activeTab === 'reminders' ? 'notifications' : 'notifications-outline'}
                   size={22}
-                  color={activeTab === 'reminders' ? COLORS.primary : COLORS.textSecondary}
+                  color={activeTab === 'reminders' ? colors.primary : colors.textSecondary}
                 />
                 {dueRemindersCount > 0 && <View style={styles.tabBadge} />}
               </View>
@@ -206,7 +207,7 @@ function MainAppContent() {
               <Ionicons
                 name={activeTab === 'backup' ? 'settings' : 'settings-outline'}
                 size={22}
-                color={activeTab === 'backup' ? COLORS.primary : COLORS.textSecondary}
+                color={activeTab === 'backup' ? colors.primary : colors.textSecondary}
               />
               <Text style={[styles.tabLabel, activeTab === 'backup' && styles.tabLabelActive]}>
                 {t('tab_backup')}

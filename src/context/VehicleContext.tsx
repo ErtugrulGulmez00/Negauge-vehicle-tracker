@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Vehicle, Expense, Reminder, ExpenseCategory } from '../types';
 import { setAppLanguage, appLanguage } from '../localization/i18n';
-import { setThemeColors } from '../theme/colors';
+import { encodeBase64, decodeBase64 } from '../utils/backup';
 
 interface VehicleContextType {
   vehicles: Vehicle[];
@@ -91,10 +91,8 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (storedTheme) {
           const th = storedTheme as 'dark' | 'light';
           setThemeState(th);
-          setThemeColors(th);
         } else {
           setThemeState('dark');
-          setThemeColors('dark');
         }
 
         if (storedOnboarding === 'true') {
@@ -298,11 +296,17 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
       version: 1,
       exportDate: new Date().toISOString(),
     };
-    return JSON.stringify(data, null, 2);
+    const json = JSON.stringify(data);
+    return 'HMM_SECURE_BACKUP_' + encodeBase64(json);
   };
 
-  const importData = async (jsonString: string): Promise<boolean> => {
+  const importData = async (backupString: string): Promise<boolean> => {
     try {
+      let cleanStr = backupString.trim();
+      if (cleanStr.startsWith('HMM_SECURE_BACKUP_')) {
+        cleanStr = cleanStr.substring('HMM_SECURE_BACKUP_'.length);
+      }
+      const jsonString = decodeBase64(cleanStr);
       const parsed = JSON.parse(jsonString);
       if (parsed && Array.isArray(parsed.vehicles) && Array.isArray(parsed.expenses) && Array.isArray(parsed.reminders)) {
         await saveVehicles(parsed.vehicles);
@@ -351,7 +355,6 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const setTheme = async (newTheme: 'dark' | 'light') => {
     setThemeState(newTheme);
-    setThemeColors(newTheme);
     await AsyncStorage.setItem('@app_theme', newTheme);
   };
 

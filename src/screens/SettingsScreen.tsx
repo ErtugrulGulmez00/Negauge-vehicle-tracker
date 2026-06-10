@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Clipboard, Alert, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
-import { COLORS, DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';

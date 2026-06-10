@@ -2,15 +2,15 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
-import { COLORS, DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { ExpenseCategory } from '../types';
-import { t, getCurrencySymbol } from '../localization/i18n';
+import { t, getCurrencySymbol, getShortMonthName } from '../localization/i18n';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export const AnalyticsScreen: React.FC = () => {
-  const { selectedVehicle, expenses, theme } = useVehicles();
+  const { selectedVehicle, expenses, language, theme } = useVehicles();
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -50,7 +50,7 @@ export const AnalyticsScreen: React.FC = () => {
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const prefix = `${year}-${month}`; // "YYYY-MM"
       
-      const label = d.toLocaleDateString(undefined, { month: 'short' });
+      const label = getShortMonthName(d.getMonth(), language);
       
       const sum = vehicleExpenses
         .filter(e => e.date.startsWith(prefix))

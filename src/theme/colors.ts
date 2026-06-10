@@ -66,12 +66,7 @@ export const LIGHT_COLORS = {
   ]
 };
 
-export let COLORS = { ...DARK_COLORS };
 
-export const setThemeColors = (theme: 'dark' | 'light') => {
-  const source = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
-  Object.assign(COLORS, source);
-};
 
 export const FONTS = {
   regular: 'Outfit_400Regular',

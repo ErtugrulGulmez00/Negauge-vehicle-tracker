@@ -409,3 +409,9 @@ export const getDistanceUnit = (): string => {
   // Can be KM or MI, but let's keep KM for now as it's typical metric
   return 'KM';
 };
+
+export const getShortMonthName = (monthIndex: number, lang: string = appLanguage): string => {
+  const trMonths = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const enMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return lang.startsWith('tr') ? trMonths[monthIndex] : enMonths[monthIndex];
+};

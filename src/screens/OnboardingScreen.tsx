@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
-import { COLORS, DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
+import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
