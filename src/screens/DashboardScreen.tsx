@@ -160,7 +160,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.headerWelcomeRow}>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.welcomeSubtitle}>OtoBütçem</Text>
-            <Text style={styles.welcomeTitle}>{t('tab_dashboard')}</Text>
           </View>
         </View>
 
@@ -353,17 +352,11 @@ const getStyles = (theme: 'dark' | 'light') => {
       alignItems: 'center',
     },
     welcomeSubtitle: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
-    },
-    welcomeTitle: {
-      fontSize: 26,
+      fontSize: 28,
       fontWeight: '800',
       color: colors.textPrimary,
-      marginTop: 2,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
     },
     miniVehiclePill: {
       position: 'absolute',
