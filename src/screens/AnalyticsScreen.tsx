@@ -142,7 +142,7 @@ export const AnalyticsScreen: React.FC = () => {
           <>
             {/* Quick Stats Grid */}
             <View style={styles.summaryGrid}>
-              <Card style={styles.summaryCard}>
+              <Card style={[styles.summaryCard, { borderLeftColor: selectedVehicle.color, borderLeftWidth: 3 }]}>
                 <Text style={styles.summaryLabel}>{t('an_monthly_average')}</Text>
                 <Text style={styles.summaryValue}>
                   {getCurrencySymbol()}{analyticsSummary.avg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -151,15 +151,24 @@ export const AnalyticsScreen: React.FC = () => {
               </Card>
               <Card style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>{t('an_most_spent')}</Text>
-                <Text style={[styles.summaryValue, { color: currentColors.primary }]} numberOfLines={1}>
-                  {analyticsSummary.highest}
-                </Text>
+                {categoryData.length > 0 ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 6 }}>
+                    <View style={[styles.miniCatBadge, { backgroundColor: categoryData[0].color + '15' }]}>
+                      <Ionicons name={categoryData[0].icon as any} size={13} color={categoryData[0].color} />
+                    </View>
+                    <Text style={[styles.summaryValue, { color: categoryData[0].color, marginLeft: 6, marginBottom: 0, flex: 1 }]} numberOfLines={1}>
+                      {categoryData[0].label}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.summaryValue}>-</Text>
+                )}
                 <Text style={styles.summarySub}>{t('an_category_based')}</Text>
               </Card>
             </View>
 
             {/* Monthly Trend Chart */}
-            <Card style={styles.chartCard}>
+            <Card style={[styles.chartCard, { borderColor: selectedVehicle.color + '20', borderWidth: 1 }]}>
               <Text style={styles.chartTitle}>{t('an_monthly_trend')}</Text>
               <View style={styles.chartContainer}>
                 <View style={styles.barsContainer}>
@@ -175,7 +184,7 @@ export const AnalyticsScreen: React.FC = () => {
                           )}
                         </View>
                         <View style={[styles.barBack]}>
-                          <View style={[styles.barFill, { height: Math.max(barHeight, 4), backgroundColor: currentColors.primary }]} />
+                          <View style={[styles.barFill, { height: Math.max(barHeight, 4), backgroundColor: selectedVehicle.color }]} />
                         </View>
                         <Text style={styles.barLabel}>{d.monthLabel}</Text>
                       </View>
@@ -260,6 +269,13 @@ const getStyles = (theme: 'dark' | 'light') => {
     summaryCard: {
       width: '48%',
       padding: 14,
+    },
+    miniCatBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     summaryLabel: {
       fontSize: 11,
