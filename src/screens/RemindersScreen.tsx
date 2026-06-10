@@ -8,7 +8,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Reminder } from '../types';
 import * as Haptics from 'expo-haptics';
-import { t } from '../localization/i18n';
+import { t, TranslationKey } from '../localization/i18n';
 import { getLocalDateString } from '../utils/date';
 
 export const RemindersScreen: React.FC = () => {
@@ -33,6 +33,9 @@ export const RemindersScreen: React.FC = () => {
   const [targetOdometer, setTargetOdometer] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Presets States
+  const [selectedPresetCat, setSelectedPresetCat] = useState<'all' | 'legal' | 'maintenance' | 'seasonal' | 'moto' | 'life'>('all');
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -56,6 +59,182 @@ export const RemindersScreen: React.FC = () => {
 
   // Get active vehicle reminders
   const activeReminders = reminders.filter(r => r.vehicleId === selectedVehicle?.id);
+
+  interface ReminderPreset {
+    id: string;
+    category: 'legal' | 'maintenance' | 'seasonal' | 'moto' | 'life';
+    titleKey: TranslationKey;
+    type: 'date' | 'odometer';
+    icon: string;
+    color: string;
+  }
+
+  const presetsList: ReminderPreset[] = [
+    // Resmi & Yasal
+    { id: 'muayene', category: 'legal', titleKey: 'preset_muayene', type: 'date', icon: 'shield-outline', color: '#EF4444' },
+    { id: 'sigorta', category: 'legal', titleKey: 'preset_sigorta', type: 'date', icon: 'document-text-outline', color: '#3B82F6' },
+    { id: 'kasko', category: 'legal', titleKey: 'preset_kasko', type: 'date', icon: 'document-attach-outline', color: '#8B5CF6' },
+    { id: 'mtv', category: 'legal', titleKey: 'preset_mtv', type: 'date', icon: 'cash-outline', color: '#EC4899' },
+    { id: 'egzoz', category: 'legal', titleKey: 'preset_egzoz', type: 'date', icon: 'leaf-outline', color: '#10B981' },
+    
+    // Periyodik & KM
+    { id: 'yag', category: 'maintenance', titleKey: 'preset_yag', type: 'odometer', icon: 'water-outline', color: '#F59E0B' },
+    { id: 'triger', category: 'maintenance', titleKey: 'preset_triger', type: 'odometer', icon: 'cog-outline', color: '#3B82F6' },
+    { id: 'balata', category: 'maintenance', titleKey: 'preset_balata', type: 'odometer', icon: 'disc-outline', color: '#10B981' },
+    { id: 'buji', category: 'maintenance', titleKey: 'preset_buji', type: 'odometer', icon: 'flash-outline', color: '#EC4899' },
+    
+    // Mevsimsel & Güvenlik
+    { id: 'lastik_degisim', category: 'seasonal', titleKey: 'preset_lastik_degisim', type: 'date', icon: 'snow-outline', color: '#3B82F6' },
+    { id: 'lastik_omru', category: 'seasonal', titleKey: 'preset_lastik_omru', type: 'date', icon: 'time-outline', color: '#EF4444' },
+    { id: 'lastik_basinç', category: 'seasonal', titleKey: 'preset_lastik_basinç', type: 'date', icon: 'speedometer-outline', color: '#10B981' },
+    { id: 'antifriz', category: 'seasonal', titleKey: 'preset_antifriz', type: 'date', icon: 'thermometer-outline', color: '#8B5CF6' },
+    
+    // Motosiklet Özel
+    { id: 'zincir_yag', category: 'moto', titleKey: 'preset_zincir_yag', type: 'odometer', icon: 'git-commit-outline', color: '#F59E0B' },
+    { id: 'zincir_gerginlik', category: 'moto', titleKey: 'preset_zincir_gerginlik', type: 'odometer', icon: 'git-compare-outline', color: '#10B981' },
+    { id: 'kask_omru', category: 'moto', titleKey: 'preset_kask_omru', type: 'date', icon: 'ribbon-outline', color: '#8B5CF6' },
+    
+    // Akıllı & Yaşam
+    { id: 'otopark', category: 'life', titleKey: 'preset_otopark', type: 'date', icon: 'pin-outline', color: '#3B82F6' },
+    { id: 'ilkyardim', category: 'life', titleKey: 'preset_ilkyardim', type: 'date', icon: 'medkit-outline', color: '#EF4444' },
+  ];
+
+  const isMotorcycle = selectedVehicle?.icon === 'bicycle';
+  
+  const presetCategories: { id: 'all' | 'legal' | 'maintenance' | 'seasonal' | 'moto' | 'life'; labelKey: TranslationKey }[] = [
+    { id: 'all', labelKey: 'rem_cat_all' },
+    { id: 'legal', labelKey: 'rem_cat_legal' },
+    { id: 'maintenance', labelKey: 'rem_cat_maintenance' },
+    { id: 'seasonal', labelKey: 'rem_cat_seasonal' },
+    ...(isMotorcycle ? [{ id: 'moto' as const, labelKey: 'rem_cat_moto' as const }] : []),
+    { id: 'life', labelKey: 'rem_cat_life' },
+  ];
+
+  const filteredPresets = presetsList.filter(preset => {
+    if (preset.category === 'moto' && !isMotorcycle) return false;
+    if (selectedPresetCat === 'all') return true;
+    return preset.category === selectedPresetCat;
+  });
+
+  const handlePresetClick = (preset: ReminderPreset) => {
+    if (!selectedVehicle) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setTitle(t(preset.titleKey));
+    setType(preset.type);
+    
+    const today = new Date();
+    
+    if (preset.type === 'date') {
+      let calcDateStr = '';
+      
+      switch (preset.id) {
+        case 'muayene':
+        case 'egzoz': {
+          const d = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'sigorta':
+        case 'kasko':
+        case 'ilkyardim': {
+          const d = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'mtv': {
+          const currentMonth = today.getMonth();
+          let targetYear = today.getFullYear();
+          let targetMonth = 6; // July
+          if (currentMonth >= 6) {
+            targetYear += 1;
+            targetMonth = 0; // January
+          }
+          const d = new Date(targetYear, targetMonth, 1);
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'lastik_degisim': {
+          const currentMonth = today.getMonth();
+          let targetYear = today.getFullYear();
+          let targetMonth = 3; // April
+          if (currentMonth >= 3 && currentMonth < 11) {
+            targetMonth = 11; // December
+          } else if (currentMonth >= 11) {
+            targetYear += 1;
+            targetMonth = 3; // April
+          }
+          const d = new Date(targetYear, targetMonth, 1);
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'lastik_omru': {
+          const d = new Date(today.getFullYear() + 4, today.getMonth(), today.getDate());
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'lastik_basinç': {
+          const d = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'antifriz': {
+          const currentMonth = today.getMonth();
+          let targetYear = today.getFullYear();
+          if (currentMonth >= 9 && today.getDate() > 15) {
+            targetYear += 1;
+          }
+          const d = new Date(targetYear, 9, 15); // Oct 15
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'kask_omru': {
+          const d = new Date(today.getFullYear() + 5, today.getMonth(), today.getDate());
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+        case 'otopark': {
+          calcDateStr = today.toISOString().split('T')[0];
+          break;
+        }
+        default: {
+          const d = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+          calcDateStr = d.toISOString().split('T')[0];
+          break;
+        }
+      }
+      
+      setTargetDate(calcDateStr);
+      setTargetOdometer('');
+    } else {
+      let calcKm = 0;
+      switch (preset.id) {
+        case 'yag':
+          calcKm = selectedVehicle.currentOdometer + 10000;
+          break;
+        case 'triger':
+          calcKm = selectedVehicle.currentOdometer + 60000;
+          break;
+        case 'balata':
+          calcKm = selectedVehicle.currentOdometer + 30000;
+          break;
+        case 'buji':
+          calcKm = selectedVehicle.currentOdometer + 40000;
+          break;
+        case 'zincir_yag':
+          calcKm = selectedVehicle.currentOdometer + 500;
+          break;
+        case 'zincir_gerginlik':
+          calcKm = selectedVehicle.currentOdometer + 1000;
+          break;
+        default:
+          calcKm = selectedVehicle.currentOdometer + 10000;
+          break;
+      }
+      setTargetOdometer(String(calcKm));
+      setTargetDate('');
+    }
+  };
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -193,6 +372,57 @@ export const RemindersScreen: React.FC = () => {
                 <Ionicons name="close" size={24} color={currentColors.textSecondary} />
               </TouchableOpacity>
             </View>
+
+            {/* Presets Selection */}
+            {!reminderToEdit && (
+              <View style={styles.presetSection}>
+                <Text style={styles.sectionLabel}>{t('rem_presets_title')}</Text>
+                
+                {/* Horizontal Category Chips */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetCatsScroll}>
+                  {presetCategories.map(cat => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.presetCatChip,
+                        selectedPresetCat === cat.id && styles.presetCatChipActive
+                      ]}
+                      onPress={() => setSelectedPresetCat(cat.id as any)}
+                    >
+                      <Text style={[
+                        styles.presetCatText,
+                        selectedPresetCat === cat.id && styles.presetCatTextActive
+                      ]}>
+                        {t(cat.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {/* Presets grid */}
+                <View style={styles.presetsGrid}>
+                  {filteredPresets.map(preset => (
+                    <TouchableOpacity
+                      key={preset.id}
+                      style={styles.presetItemCard}
+                      onPress={() => handlePresetClick(preset)}
+                    >
+                      <View style={[styles.presetIconBox, { backgroundColor: preset.color + '15' }]}>
+                        <Ionicons name={preset.icon as any} size={16} color={preset.color} />
+                      </View>
+                      <Text style={styles.presetItemText} numberOfLines={2}>
+                        {t(preset.titleKey)}
+                      </Text>
+                      <View style={styles.presetBadge}>
+                        <Text style={[styles.presetBadgeText, { color: preset.type === 'date' ? '#8B5CF6' : '#F59E0B' }]}>
+                          {preset.type === 'date' ? (language === 'tr' ? 'Tarih' : 'Date') : 'KM'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
 
             <Input
               label={`${t('rem_name_placeholder')} *`}
@@ -538,6 +768,80 @@ const getStyles = (theme: 'dark' | 'light') => {
       textAlign: 'center',
       lineHeight: 22,
       marginTop: 16,
+    },
+    presetSection: {
+      marginTop: 10,
+      marginBottom: 20,
+    },
+    presetCatsScroll: {
+      flexDirection: 'row',
+      marginVertical: 10,
+    },
+    presetCatChip: {
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F1F5F9',
+      marginRight: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    presetCatChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    presetCatText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    presetCatTextActive: {
+      color: '#0F172A',
+      fontWeight: '700',
+    },
+    presetsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginHorizontal: -4,
+      marginTop: 6,
+    },
+    presetItemCard: {
+      flexBasis: '30.5%',
+      flexGrow: 1,
+      margin: 4,
+      padding: 10,
+      borderRadius: 10,
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F8FAFC',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      alignItems: 'center',
+    },
+    presetIconBox: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    presetItemText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      lineHeight: 12,
+      height: 24,
+    },
+    presetBadge: {
+      marginTop: 6,
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: 4,
+      backgroundColor: theme === 'dark' ? '#0F172A' : '#E2E8F0',
+    },
+    presetBadgeText: {
+      fontSize: 8,
+      fontWeight: '800',
     },
   });
   return memoizedStyles;
