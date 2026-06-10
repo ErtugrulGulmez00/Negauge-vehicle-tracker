@@ -159,7 +159,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Modern Greeting (Centered Title) */}
         <View style={styles.headerWelcomeRow}>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.welcomeSubtitle}>OtoBütçem</Text>
+            <Text style={styles.welcomeSubtitle}>OTOBÜTÇEM</Text>
           </View>
         </View>
 
@@ -352,11 +352,10 @@ const getStyles = (theme: 'dark' | 'light') => {
       alignItems: 'center',
     },
     welcomeSubtitle: {
-      fontSize: 28,
+      fontSize: 22,
       fontWeight: '800',
       color: colors.textPrimary,
-      textTransform: 'uppercase',
-      letterSpacing: 1.5,
+      letterSpacing: 4,
     },
     miniVehiclePill: {
       position: 'absolute',
