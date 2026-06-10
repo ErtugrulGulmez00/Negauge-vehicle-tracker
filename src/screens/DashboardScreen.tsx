@@ -9,6 +9,7 @@ import { Input } from '../components/Input';
 import { Expense } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t, getCurrencySymbol } from '../localization/i18n';
+import { getLocalMonthString, getLocalDateDaysAgo } from '../utils/date';
 
 interface DashboardScreenProps {
   onAddExpensePress: () => void;
@@ -61,15 +62,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const total = vehicleExpenses.reduce((sum, e) => sum + e.amount, 0);
     
     // Monthly Calculation
-    const currentMonthStr = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+    const currentMonthStr = getLocalMonthString(); // "YYYY-MM"
     const monthly = vehicleExpenses
       .filter(e => e.date.substring(0, 7) === currentMonthStr)
       .reduce((sum, e) => sum + e.amount, 0);
 
     // Weekly Calculation (last 7 days)
-    const today = new Date();
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneWeekAgoStr = oneWeekAgo.toISOString().substring(0, 10);
+    const oneWeekAgoStr = getLocalDateDaysAgo(7); // "YYYY-MM-DD"
     const weekly = vehicleExpenses
       .filter(e => e.date >= oneWeekAgoStr)
       .reduce((sum, e) => sum + e.amount, 0);

@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { Expense, ExpenseCategory } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t, getCurrencySymbol } from '../localization/i18n';
+import { getLocalDateString, getLocalDateDaysAgo } from '../utils/date';
 
 interface AddExpenseScreenProps {
   onSuccess: () => void;
@@ -59,11 +60,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
   // Set today's date by default in YYYY-MM-DD format (only if not editing)
   useEffect(() => {
     if (expenseToEdit) return;
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    setDate(`${yyyy}-${mm}-${dd}`);
+    setDate(getLocalDateString());
     
     if (selectedVehicle) {
       setOdometer(String(selectedVehicle.currentOdometer));
@@ -72,12 +69,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
 
   const setPresetDate = (daysAgo: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() - daysAgo);
-    const yyyy = targetDate.getFullYear();
-    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(targetDate.getDate()).padStart(2, '0');
-    setDate(`${yyyy}-${mm}-${dd}`);
+    setDate(getLocalDateDaysAgo(daysAgo));
   };
 
   const validate = () => {

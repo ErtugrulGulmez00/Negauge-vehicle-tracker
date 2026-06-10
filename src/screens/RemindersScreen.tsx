@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { Reminder } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
+import { getLocalDateString } from '../utils/date';
 
 export const RemindersScreen: React.FC = () => {
   const { selectedVehicle, reminders, addReminder, updateReminder, toggleReminder, deleteReminder, language, theme } = useVehicles();
@@ -132,7 +133,7 @@ export const RemindersScreen: React.FC = () => {
     if (!selectedVehicle || reminder.isCompleted) return false;
     
     if (reminder.type === 'date' && reminder.targetDate) {
-      const today = new Date().toISOString().substring(0, 10); // YYYY-MM-DD
+      const today = getLocalDateString(); // YYYY-MM-DD
       return today >= reminder.targetDate;
     }
     

@@ -21,6 +21,7 @@ import {
   Outfit_800ExtraBold 
 } from '@expo-google-fonts/outfit';
 import { t } from './src/localization/i18n';
+import { getLocalDateString } from './src/utils/date';
 
 type Tab = 'dashboard' | 'vehicles' | 'analytics' | 'reminders' | 'backup';
 
@@ -50,7 +51,7 @@ function MainAppContent() {
     if (!selectedVehicle) return 0;
     const activeReminders = reminders.filter(r => r.vehicleId === selectedVehicle.id && !r.isCompleted);
     
-    const today = new Date().toISOString().substring(0, 10);
+    const today = getLocalDateString();
     return activeReminders.filter(r => {
       if (r.type === 'date' && r.targetDate) {
         return today >= r.targetDate;
