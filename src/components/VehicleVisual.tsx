@@ -80,7 +80,7 @@ export const VehicleVisual: React.FC<VehicleVisualProps> = ({
             <Path d="M 92 30 C 102 28 118 28 124 34" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.4" />
           </Svg>
         );
-      case 'bus': // Minibüs / Van
+      case 'suv': // SUV / Crossover / Pickup
         return (
           <Svg width={width} height={height} viewBox="0 0 200 80">
             <Defs>
@@ -96,21 +96,28 @@ export const VehicleVisual: React.FC<VehicleVisualProps> = ({
             </Defs>
 
             {/* Ground Glow */}
-            <Circle cx="100" cy="67" r="80" fill={`url(#${gradId})`} scaleY="0.12" />
+            <Circle cx="100" cy="65" r="85" fill={`url(#${gradId})`} scaleY="0.12" />
+
+            {/* Roof Rails */}
+            <Path d="M 68,10 L 128,10" stroke="#475569" strokeWidth="2.5" strokeLinecap="round" />
+            <Path d="M 78,10 L 78,13 M 118,10 L 118,13" stroke="#475569" strokeWidth="2" />
 
             {/* Main Body */}
             <Path
-              d="M 15,60 
-                 L 15,22 
-                 C 15,16 22,12 28,12 
-                 L 172,12 
-                 C 178,12 185,18 185,26 
-                 L 185,60 
-                 C 185,60 178,52 168,52 
-                 C 158,52 153,60 148,60 
-                 L 68,60 
-                 C 63,60 58,52 48,52 
-                 C 38,52 33,60 28,60 
+              d="M 12,54 
+                 C 8,54 4,50 4,45 
+                 C 4,41 10,38 18,36 
+                 C 22,25 36,15 65,13 
+                 L 132,13 
+                 C 145,13 164,15 174,26 
+                 L 184,33 
+                 C 192,36 196,40 196,44 
+                 C 196,49 191,54 186,54 
+                 C 181,54 176,46 166,46 
+                 C 156,46 151,54 146,54 
+                 L 66,54 
+                 C 61,54 56,46 46,46 
+                 C 36,46 31,54 26,54 
                  Z"
               fill={`url(#${metalGradId})`}
               stroke="#0F172A"
@@ -118,21 +125,29 @@ export const VehicleVisual: React.FC<VehicleVisualProps> = ({
             />
 
             {/* Rear Wheel */}
-            <Circle cx="48" cy="58" r="12" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
-            <Circle cx="48" cy="58" r="4" fill="#64748B" />
+            <Circle cx="46" cy="52" r="12" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="46" cy="52" r="5" fill="#64748B" />
 
             {/* Front Wheel */}
-            <Circle cx="158" cy="58" r="12" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
-            <Circle cx="158" cy="58" r="4" fill="#64748B" />
+            <Circle cx="146" cy="52" r="12" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="146" cy="52" r="5" fill="#64748B" />
 
             {/* Windows */}
-            <Path d="M 22,18 L 85,18 L 85,32 L 22,32 Z M 92,18 L 140,18 L 140,32 L 92,32 Z M 147,18 L 178,18 L 175,32 L 147,32 Z" fill="#0F172A" opacity="0.85" />
-            
-            {/* Front Windshield glare */}
-            <Path d="M 150 20 L 175 20 L 173 26 L 150 26 Z" fill="#FFFFFF" opacity="0.15" />
+            <Path
+              d="M 60,30 
+                 L 124,30 
+                 L 152,30 
+                 C 147,22 139,16 128,16 
+                 L 66,16 
+                 Z"
+              fill="#0F172A"
+              opacity="0.8"
+            />
+            <Path d="M 68,18 C 83,16 100,16 115,18" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.25" />
+            <Path d="M 108,16 L 108,30" stroke="#0F172A" strokeWidth="1.5" opacity="0.6" />
           </Svg>
         );
-      case 'boat': // Tekne
+      case 'van': // Hafif Ticari
         return (
           <Svg width={width} height={height} viewBox="0 0 200 80">
             <Defs>
@@ -147,28 +162,109 @@ export const VehicleVisual: React.FC<VehicleVisualProps> = ({
               </LinearGradient>
             </Defs>
 
-            {/* Water Glow */}
-            <Circle cx="100" cy="58" r="85" fill={`url(#${gradId})`} scaleY="0.15" />
+            {/* Ground Glow */}
+            <Circle cx="100" cy="65" r="85" fill={`url(#${gradId})`} scaleY="0.12" />
 
-            {/* Cabin */}
-            <Path d="M 60,35 L 72,16 L 132,16 L 142,35 Z" fill="#E2E8F0" stroke="#0F172A" strokeWidth="2" />
-            <Path d="M 78,20 L 105,20 L 102,30 L 80,30 Z M 110,20 L 128,20 L 126,30 L 108,30 Z" fill="#0F172A" />
-
-            {/* Hull */}
+            {/* Main Body */}
             <Path
-              d="M 12,35 
-                 L 188,35 
-                 C 188,35 178,58 145,62 
-                 L 45,62 
-                 C 25,58 12,35 12,35 
+              d="M 15,55 
+                 L 15,18 
+                 C 15,14 18,12 24,12 
+                 L 138,12 
+                 C 148,12 165,16 172,25 
+                 L 182,34 
+                 C 188,38 190,42 190,46 
+                 L 190,55 
+                 C 190,55 183,47 173,47 
+                 C 163,47 158,55 153,55 
+                 L 67,55 
+                 C 62,55 57,47 47,47 
+                 C 37,47 32,55 27,55 
                  Z"
               fill={`url(#${metalGradId})`}
               stroke="#0F172A"
               strokeWidth="2.5"
             />
 
-            {/* Metallic line on hull */}
-            <Path d="M 22,42 L 172,42" stroke="#FFFFFF" strokeWidth="2" opacity="0.3" />
+            {/* Rear Wheel */}
+            <Circle cx="47" cy="53" r="11" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="47" cy="53" r="4.5" fill="#64748B" />
+
+            {/* Front Wheel */}
+            <Circle cx="153" cy="53" r="11" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="153" cy="53" r="4.5" fill="#64748B" />
+
+            {/* Windows */}
+            <Path d="M 112,16 L 142,16 L 158,26 L 158,34 L 112,34 Z" fill="#0F172A" opacity="0.85" />
+            <Path d="M 68,16 L 105,16 L 105,34 L 68,34 Z" fill="#0F172A" opacity="0.85" />
+            <Path d="M 22,16 L 62,16 L 62,34 L 22,34 Z" fill="#0F172A" opacity="0.85" />
+          </Svg>
+        );
+      case 'truck': // Ağır Ticari (Tır)
+        return (
+          <Svg width={width} height={height} viewBox="0 0 200 80">
+            <Defs>
+              <RadialGradient id={gradId} cx="50%" cy="50%" rx="50%" ry="50%">
+                <Stop offset="0%" stopColor={color} stopOpacity="0.4" />
+                <Stop offset="100%" stopColor={color} stopOpacity="0.0" />
+              </RadialGradient>
+              <LinearGradient id={metalGradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
+                <Stop offset="50%" stopColor={color} stopOpacity="1" />
+                <Stop offset="100%" stopColor="#000000" stopOpacity="0.5" />
+              </LinearGradient>
+            </Defs>
+
+            {/* Ground Glow */}
+            <Circle cx="100" cy="68" r="90" fill={`url(#${gradId})`} scaleY="0.12" />
+
+            {/* Exhaust Pipe */}
+            <Path d="M 60,48 L 60,6 M 62,48 L 62,8" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" />
+
+            {/* Main Body */}
+            <Path
+              d="M 15,58 
+                 L 15,52 
+                 L 52,52 
+                 L 52,48 
+                 L 65,48 
+                 L 65,12 
+                 C 65,10 68,8 72,8 
+                 L 142,8 
+                 C 148,8 152,10 155,14 
+                 L 165,28 
+                 L 175,34 
+                 C 182,38 185,42 185,48 
+                 L 185,58 
+                 C 185,58 178,50 168,50 
+                 C 158,50 153,58 148,58 
+                 L 118,58 
+                 C 113,58 108,50 98,50 
+                 C 88,50 83,58 78,58 
+                 L 65,58 
+                 C 60,58 55,50 45,50 
+                 C 35,50 30,58 25,58 
+                 Z"
+              fill={`url(#${metalGradId})`}
+              stroke="#0F172A"
+              strokeWidth="2.5"
+            />
+
+            {/* Rear Wheel 1 */}
+            <Circle cx="45" cy="56" r="11" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="45" cy="56" r="4.5" fill="#64748B" />
+
+            {/* Rear Wheel 2 */}
+            <Circle cx="98" cy="56" r="11" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="98" cy="56" r="4.5" fill="#64748B" />
+
+            {/* Front Wheel */}
+            <Circle cx="148" cy="56" r="11" fill="#1E293B" stroke="#0F172A" strokeWidth="4" />
+            <Circle cx="148" cy="56" r="4.5" fill="#64748B" />
+
+            {/* Windows */}
+            <Path d="M 112,12 L 140,12 L 152,24 L 152,32 L 112,32 Z" fill="#0F172A" opacity="0.85" />
+            <Path d="M 78,14 L 98,14 L 98,22 L 78,22 Z" fill="#0F172A" opacity="0.85" />
           </Svg>
         );
       case 'car': // Otomobil (Default)

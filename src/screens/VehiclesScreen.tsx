@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { VehicleVisual } from '../components/VehicleVisual';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
@@ -10,6 +11,27 @@ import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
 import { Vehicle } from '../types';
 import { VEHICLE_CATALOG, CatalogBrand } from '../data/vehicleCatalog';
+
+const getMaterialIconName = (iconName: string) => {
+  switch (iconName) {
+    case 'car':
+      return 'car';
+    case 'bicycle':
+    case 'motorbike':
+      return 'motorbike';
+    case 'suv':
+    case 'car-suv':
+      return 'car-suv';
+    case 'van':
+    case 'van-utility':
+      return 'van-utility';
+    case 'truck':
+    case 'truck-trailer':
+      return 'truck-trailer';
+    default:
+      return 'car';
+  }
+};
 
 export const VehiclesScreen: React.FC = () => {
   const { vehicles, selectedVehicleId, selectVehicle, addVehicle, updateVehicle, deleteVehicle, language, theme } = useVehicles();
@@ -118,8 +140,9 @@ export const VehiclesScreen: React.FC = () => {
   const iconOptions = [
     { name: 'car', label: t('v_type_car') },
     { name: 'bicycle', label: t('v_type_motorcycle') },
-    { name: 'bus', label: t('v_type_bus') },
-    { name: 'boat', label: t('v_type_boat') },
+    { name: 'suv', label: t('v_type_suv') },
+    { name: 'van', label: t('v_type_van') },
+    { name: 'truck', label: t('v_type_truck') },
   ];
 
   const handleSelectVehicle = (id: string) => {
@@ -308,8 +331,8 @@ export const VehiclesScreen: React.FC = () => {
                     setSelectedIcon(option.name);
                   }}
                 >
-                  <Ionicons
-                    name={option.name as any}
+                  <MaterialCommunityIcons
+                    name={getMaterialIconName(option.name) as any}
                     size={24}
                     color={selectedIcon === option.name ? selectedColor : currentColors.textMuted}
                   />
@@ -364,8 +387,8 @@ export const VehiclesScreen: React.FC = () => {
                   ]}
                 >
                   <View style={styles.cardLeft}>
-                    <View style={[styles.avatar, { backgroundColor: vehicle.color + '20' }]}>
-                      <Ionicons name={vehicle.icon as any} size={28} color={vehicle.color} />
+                    <View style={{ marginRight: 12, width: 70, height: 35, justifyContent: 'center', alignItems: 'center' }}>
+                      <VehicleVisual type={vehicle.icon} color={vehicle.color} width={70} height={35} />
                     </View>
                     <View style={styles.vehicleInfo}>
                       <Text style={styles.vehicleName}>{vehicle.name}</Text>
