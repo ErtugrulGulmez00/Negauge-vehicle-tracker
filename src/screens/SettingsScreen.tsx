@@ -8,6 +8,26 @@ import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
 
+function getContrastColor(hexColor: string) {
+  if (!hexColor) return '#0F172A';
+  const hex = hexColor.replace('#', '');
+  if (hex.length === 3) {
+    const r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+    const g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+    const b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 180 ? '#0F172A' : '#FFFFFF';
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 180 ? '#0F172A' : '#FFFFFF';
+  }
+  return '#FFFFFF';
+}
+
 export const SettingsScreen: React.FC = () => {
   const { 
     exportData, 
@@ -16,7 +36,8 @@ export const SettingsScreen: React.FC = () => {
     language, 
     theme, 
     setLanguage, 
-    setTheme 
+    setTheme,
+    selectedVehicle,
   } = useVehicles();
 
   const [backupString, setBackupString] = useState('');
@@ -118,6 +139,9 @@ export const SettingsScreen: React.FC = () => {
   const styles = getStyles(theme);
   const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
+  const buttonBgColor = selectedVehicle?.color || currentColors.primary;
+  const buttonTextColor = getContrastColor(buttonBgColor);
+
   return (
     <Animated.View style={[styles.flexContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -128,7 +152,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Application Customization Section */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="options-outline" size={24} color={currentColors.primary} />
+            <Ionicons name="options-outline" size={24} color={buttonBgColor} />
             <Text style={styles.sectionTitle}>{t('sett_app_settings')}</Text>
           </View>
 
@@ -139,14 +163,14 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.8}
               style={[
                 styles.toggleButton,
-                theme === 'dark' && styles.toggleButtonActive
+                theme === 'dark' && { backgroundColor: buttonBgColor }
               ]}
               onPress={() => handleThemeChange('dark')}
             >
-              <Ionicons name="moon" size={16} color={theme === 'dark' ? '#0F172A' : currentColors.textSecondary} />
+              <Ionicons name="moon" size={16} color={theme === 'dark' ? buttonTextColor : currentColors.textSecondary} />
               <Text style={[
                 styles.toggleText,
-                theme === 'dark' && styles.toggleTextActive
+                theme === 'dark' && { color: buttonTextColor }
               ]}>
                 {t('sett_theme_dark')}
               </Text>
@@ -156,14 +180,14 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.8}
               style={[
                 styles.toggleButton,
-                theme === 'light' && styles.toggleButtonActive
+                theme === 'light' && { backgroundColor: buttonBgColor }
               ]}
               onPress={() => handleThemeChange('light')}
             >
-              <Ionicons name="sunny" size={16} color={theme === 'light' ? '#0F172A' : currentColors.textSecondary} />
+              <Ionicons name="sunny" size={16} color={theme === 'light' ? buttonTextColor : currentColors.textSecondary} />
               <Text style={[
                 styles.toggleText,
-                theme === 'light' && styles.toggleTextActive
+                theme === 'light' && { color: buttonTextColor }
               ]}>
                 {t('sett_theme_light')}
               </Text>
@@ -177,13 +201,13 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.8}
               style={[
                 styles.toggleButton,
-                language === 'tr' && styles.toggleButtonActive
+                language === 'tr' && { backgroundColor: buttonBgColor }
               ]}
               onPress={() => handleLanguageChange('tr')}
             >
               <Text style={[
                 styles.toggleText,
-                language === 'tr' && styles.toggleTextActive,
+                language === 'tr' && { color: buttonTextColor },
                 { marginLeft: 0 }
               ]}>
                 Türkçe
@@ -194,13 +218,13 @@ export const SettingsScreen: React.FC = () => {
               activeOpacity={0.8}
               style={[
                 styles.toggleButton,
-                language === 'en' && styles.toggleButtonActive
+                language === 'en' && { backgroundColor: buttonBgColor }
               ]}
               onPress={() => handleLanguageChange('en')}
             >
               <Text style={[
                 styles.toggleText,
-                language === 'en' && styles.toggleTextActive,
+                language === 'en' && { color: buttonTextColor },
                 { marginLeft: 0 }
               ]}>
                 English
@@ -212,7 +236,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Export Section */}
         <Card style={styles.card}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="cloud-upload-outline" size={24} color={currentColors.primary} />
+            <Ionicons name="cloud-upload-outline" size={24} color={buttonBgColor} />
             <Text style={styles.sectionTitle}>{t('bu_export_title')}</Text>
           </View>
           <Text style={styles.desc}>{t('bu_export_desc')}</Text>

@@ -15,6 +15,26 @@ interface ButtonProps {
   hapticFeedback?: boolean;
 }
 
+function getContrastColor(hexColor: string) {
+  if (!hexColor) return '#0F172A';
+  const hex = hexColor.replace('#', '');
+  if (hex.length === 3) {
+    const r = parseInt(hex.charAt(0) + hex.charAt(0), 16);
+    const g = parseInt(hex.charAt(1) + hex.charAt(1), 16);
+    const b = parseInt(hex.charAt(2) + hex.charAt(2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 180 ? '#0F172A' : '#FFFFFF';
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 180 ? '#0F172A' : '#FFFFFF';
+  }
+  return '#FFFFFF';
+}
+
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
@@ -25,8 +45,11 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   hapticFeedback = true,
 }) => {
-  const { theme } = useVehicles();
+  const { theme, selectedVehicle } = useVehicles();
   const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+
+  const buttonBgColor = selectedVehicle?.color || currentColors.primary;
+  const buttonTextColor = getContrastColor(buttonBgColor);
 
   const handlePress = () => {
     if (disabled || loading) return;
@@ -38,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const dynamicStyles = {
     primary: {
-      backgroundColor: currentColors.primary,
+      backgroundColor: buttonBgColor,
     },
     secondary: {
       backgroundColor: currentColors.cardBackground,
@@ -49,15 +72,24 @@ export const Button: React.FC<ButtonProps> = ({
     },
     outline: {
       backgroundColor: 'transparent',
-      borderColor: currentColors.primary,
+      borderColor: buttonBgColor,
     },
     disabled: {
       backgroundColor: theme === 'dark' ? '#1E293B' : '#E2E8F0',
       borderColor: theme === 'dark' ? '#334155' : '#CBD5E1',
       opacity: 0.5,
     },
+    textPrimary: {
+      color: buttonTextColor,
+    },
+    textSecondary: {
+      color: currentColors.textPrimary,
+    },
+    textDanger: {
+      color: '#FFFFFF',
+    },
     textOutline: {
-      color: currentColors.primary,
+      color: buttonBgColor,
     },
     textDisabled: {
       color: currentColors.textMuted,
@@ -87,10 +119,16 @@ export const Button: React.FC<ButtonProps> = ({
     if (disabled) return [base, dynamicStyles.textDisabled, textStyle];
     
     switch (variant) {
+      case 'primary':
+        return [base, dynamicStyles.textPrimary, textStyle];
+      case 'secondary':
+        return [base, dynamicStyles.textSecondary, textStyle];
+      case 'danger':
+        return [base, dynamicStyles.textDanger, textStyle];
       case 'outline':
         return [base, dynamicStyles.textOutline, textStyle];
       default:
-        return [base, styles.textSolid, textStyle];
+        return [base, dynamicStyles.textPrimary, textStyle];
     }
   };
 
@@ -102,7 +140,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={getButtonStyle()}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? currentColors.primary : '#000'} size="small" />
+        <ActivityIndicator color={variant === 'outline' ? buttonBgColor : buttonTextColor} size="small" />
       ) : (
         <Text style={getTextStyle()}>{title}</Text>
       )}
@@ -125,8 +163,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.3,
     fontWeight: '700',
-  },
-  textSolid: {
-    color: '#0F172A', // Dark text on primary/warning buttons
   },
 });
