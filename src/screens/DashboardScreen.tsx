@@ -53,7 +53,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   // Calculations
   const stats = useMemo(() => {
     if (!selectedVehicle || vehicleExpenses.length === 0) {
-      return { total: 0, monthly: 0, costPerKm: 0, distance: 0 };
+      return { total: 0, monthly: 0, weekly: 0, costPerKm: 0, distance: 0 };
     }
 
     const total = vehicleExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -64,11 +64,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       .filter(e => e.date.substring(0, 7) === currentMonthStr)
       .reduce((sum, e) => sum + e.amount, 0);
 
+    // Weekly Calculation (last 7 days)
+    const today = new Date();
+    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneWeekAgoStr = oneWeekAgo.toISOString().substring(0, 10);
+    const weekly = vehicleExpenses
+      .filter(e => e.date >= oneWeekAgoStr)
+      .reduce((sum, e) => sum + e.amount, 0);
+
     // Cost Per KM
     const distance = selectedVehicle.currentOdometer - selectedVehicle.initialOdometer;
     const costPerKm = distance > 0 ? total / distance : 0;
 
-    return { total, monthly, costPerKm, distance };
+    return { total, monthly, weekly, costPerKm, distance };
   }, [selectedVehicle, vehicleExpenses]);
 
   const handleUpdateOdometer = async () => {
@@ -148,9 +156,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Modern Greeting & Active Vehicle Pill */}
+        {/* Modern Greeting & Active Vehicle Pill (Centered Title) */}
         <View style={styles.headerWelcomeRow}>
-          <View>
+          <View style={styles.headerTitleContainer}>
             <Text style={styles.welcomeSubtitle}>Negauge</Text>
             <Text style={styles.welcomeTitle}>{t('tab_dashboard')}</Text>
           </View>
@@ -173,7 +181,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Hero Card: Total Spend */}
+        {/* Hero Card: Monthly Spend */}
         <Card
           style={[
             styles.heroCard,
@@ -188,17 +196,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.heroGradientLine, { backgroundColor: selectedVehicle.color }]} />
           <View style={styles.heroContent}>
             <View style={styles.heroHeader}>
-              <Text style={styles.heroLabel}>{t('db_total_spend')}</Text>
+              <Text style={styles.heroLabel}>{t('db_monthly_spend')}</Text>
               <View style={[styles.heroIconContainer, { backgroundColor: selectedVehicle.color + '15' }]}>
                 <Ionicons name="wallet" size={20} color={selectedVehicle.color} />
               </View>
             </View>
             <Text style={styles.heroValue}>
-              {getCurrencySymbol()}{stats.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {getCurrencySymbol()}{stats.monthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <View style={styles.heroFooter}>
-              <Ionicons name="time-outline" size={13} color={currentColors.textMuted} style={{ marginRight: 4 }} />
-              <Text style={styles.heroSubText}>{t('db_all_time')}</Text>
+              <Ionicons name="calendar-outline" size={13} color={currentColors.textMuted} style={{ marginRight: 4 }} />
+              <Text style={styles.heroSubText}>{t('db_current_month')}</Text>
             </View>
           </View>
         </Card>
@@ -217,11 +225,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           
           <View style={styles.statsColumn}>
             <Card style={[styles.statCard, { borderLeftColor: currentColors.success, borderLeftWidth: 3 }]}>
-              <Text style={styles.statLabel}>{t('db_monthly_spend')}</Text>
+              <Text style={styles.statLabel}>{t('db_weekly_spend')}</Text>
               <Text style={styles.statValue}>
-                {getCurrencySymbol()}{stats.monthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {getCurrencySymbol()}{stats.weekly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
-              <Text style={styles.statSubText}>{t('db_current_month')}</Text>
+              <Text style={styles.statSubText}>{t('db_current_week')}</Text>
             </Card>
           </View>
         </View>
@@ -351,17 +359,22 @@ const getStyles = (theme: 'dark' | 'light') => {
     },
     headerWelcomeRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 20,
       marginTop: 8,
+      position: 'relative',
+      width: '100%',
+    },
+    headerTitleContainer: {
+      alignItems: 'center',
     },
     welcomeSubtitle: {
       fontSize: 12,
       fontWeight: '600',
       color: colors.textSecondary,
       textTransform: 'uppercase',
-      letterSpacing: 1,
+      letterSpacing: 1.2,
     },
     welcomeTitle: {
       fontSize: 26,
@@ -370,6 +383,8 @@ const getStyles = (theme: 'dark' | 'light') => {
       marginTop: 2,
     },
     miniVehiclePill: {
+      position: 'absolute',
+      right: 0,
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,

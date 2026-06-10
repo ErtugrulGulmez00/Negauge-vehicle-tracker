@@ -26,7 +26,7 @@ const tr = {
   warning: 'Uyarı',
 
   // Tabs
-  tab_dashboard: 'Panel',
+  tab_dashboard: 'Anasayfa',
   tab_vehicles: 'Araçlar',
   tab_analytics: 'Analiz',
   tab_reminders: 'Hatırlatıcı',
@@ -49,6 +49,7 @@ const tr = {
   db_cost_per_km: 'KM Başına Maliyet',
   db_total_spend: 'Toplam Harcama',
   db_monthly_spend: 'Aylık Harcama',
+  db_weekly_spend: 'Haftalık Harcama',
   db_current_odometer: 'Mevcut Kilometre',
   db_update_km: 'KM Güncelle',
   db_update_km_placeholder: 'Yeni Kilometre...',
@@ -62,6 +63,7 @@ const tr = {
   db_no_distance: 'KM verisi yok',
   db_all_time: 'Tüm Zamanlar',
   db_current_month: 'Cari Ay Toplamı',
+  db_current_week: 'Son 7 Gün Toplamı',
   db_odometer_title: 'Sayaç (KM)',
   db_add_expense_btn: 'Yeni Masraf Ekle',
   db_count_records: '{count} Kayıt',
@@ -212,7 +214,7 @@ const en: typeof tr = {
   warning: 'Warning',
 
   // Tabs
-  tab_dashboard: 'Dashboard',
+  tab_dashboard: 'Home',
   tab_vehicles: 'Vehicles',
   tab_analytics: 'Analytics',
   tab_reminders: 'Reminders',
@@ -235,6 +237,7 @@ const en: typeof tr = {
   db_cost_per_km: 'Cost per Kilometer',
   db_total_spend: 'Total Spend',
   db_monthly_spend: 'Monthly Spend',
+  db_weekly_spend: 'Weekly Spend',
   db_current_odometer: 'Current Odometer',
   db_update_km: 'Update Odometer',
   db_update_km_placeholder: 'New Odometer...',
@@ -248,6 +251,7 @@ const en: typeof tr = {
   db_no_distance: 'No mileage data',
   db_all_time: 'All Time',
   db_current_month: 'Current Month Total',
+  db_current_week: 'Last 7 Days Total',
   db_odometer_title: 'Odometer (KM)',
   db_add_expense_btn: 'Add New Expense',
   db_count_records: '{count} Records',
