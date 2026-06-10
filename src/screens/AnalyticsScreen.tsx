@@ -114,6 +114,32 @@ export const AnalyticsScreen: React.FC = () => {
     return { total, avg, highest: highestCat };
   }, [vehicleExpenses, categoryData]);
 
+  // 4. Fuel Consumption & Efficiency Stats
+  const fuelStats = useMemo(() => {
+    const fuelExpenses = vehicleExpenses
+      .filter(e => e.category === 'fuel')
+      .sort((a, b) => a.odometer - b.odometer);
+    
+    if (fuelExpenses.length < 2) return null;
+    
+    const totalDistance = fuelExpenses[fuelExpenses.length - 1].odometer - fuelExpenses[0].odometer;
+    if (totalDistance <= 0) return null;
+    
+    let totalLiters = 0;
+    for (let i = 1; i < fuelExpenses.length; i++) {
+      totalLiters += fuelExpenses[i].liters || 0;
+    }
+    
+    if (totalLiters === 0) return null;
+    
+    const avgConsumption = (totalLiters / totalDistance) * 100;
+    return {
+      avgConsumption: avgConsumption.toFixed(1),
+      totalLiters: totalLiters.toFixed(0),
+      totalDistance: totalDistance.toLocaleString(),
+    };
+  }, [vehicleExpenses]);
+
   if (!selectedVehicle) {
     return (
       <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -239,6 +265,39 @@ export const AnalyticsScreen: React.FC = () => {
                   </View>
                 ))}
               </View>
+            </Card>
+
+            {/* Fuel consumption and efficiency analysis */}
+            <Card style={[styles.chartCard, { marginTop: 16 }]}>
+              <View style={styles.fuelHeaderRow}>
+                <Ionicons name="speedometer-outline" size={20} color={selectedVehicle.color} />
+                <Text style={[styles.chartTitle, { marginLeft: 8, marginBottom: 0 }]}>
+                  {language === 'tr' ? 'Yakıt Verimliliği & Tüketim' : 'Fuel Efficiency & Consumption'}
+                </Text>
+              </View>
+              
+              {fuelStats ? (
+                <View style={styles.fuelStatsContent}>
+                  <View style={styles.fuelAvgRow}>
+                    <Text style={styles.fuelAvgVal}>{fuelStats.avgConsumption}</Text>
+                    <Text style={styles.fuelAvgUnit}> L/100km</Text>
+                  </View>
+                  <Text style={styles.fuelSubText}>
+                    {language === 'tr' 
+                      ? `En az 2 yakıt dolumu temel alınarak, son ${fuelStats.totalDistance} KM boyunca tüketilen toplam ${fuelStats.totalLiters} litre yakıt ile hesaplanmıştır.` 
+                      : `Calculated from total ${fuelStats.totalLiters} liters filled over the last ${fuelStats.totalDistance} KM using at least 2 fuel fill-ups.`}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.fuelEmptyContent}>
+                  <Ionicons name="information-circle-outline" size={32} color={currentColors.textMuted} style={{ marginBottom: 6 }} />
+                  <Text style={styles.fuelEmptyText}>
+                    {language === 'tr' 
+                      ? 'Yakıt tüketim verilerini görmek için "Litre" miktarını da belirterek en az 2 yakıt harcaması kaydetmelisiniz.' 
+                      : 'Log at least 2 fuel expenses with liters specified to see fuel consumption stats.'}
+                  </Text>
+                </View>
+              )}
             </Card>
           </>
         )}
@@ -447,6 +506,46 @@ const getStyles = (theme: 'dark' | 'light') => {
       marginBottom: 6,
     },
     noDataDesc: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    fuelHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    fuelStatsContent: {
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    fuelAvgRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      marginBottom: 8,
+    },
+    fuelAvgVal: {
+      fontSize: 36,
+      fontWeight: '800',
+      color: colors.primary,
+    },
+    fuelAvgUnit: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    fuelSubText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    fuelEmptyContent: {
+      alignItems: 'center',
+      paddingVertical: 16,
+    },
+    fuelEmptyText: {
       fontSize: 13,
       color: colors.textMuted,
       textAlign: 'center',

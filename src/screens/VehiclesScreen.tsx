@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator, Image, Share } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VehicleVisual } from '../components/VehicleVisual';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,7 +9,7 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
-import { t } from '../localization/i18n';
+import { t, getCurrencySymbol } from '../localization/i18n';
 import { Vehicle } from '../types';
 import { VEHICLE_CATALOG, CatalogBrand } from '../data/vehicleCatalog';
 
@@ -35,7 +35,7 @@ const getMaterialIconName = (iconName: string) => {
 };
 
 export const VehiclesScreen: React.FC = () => {
-  const { vehicles, selectedVehicleId, selectVehicle, addVehicle, updateVehicle, deleteVehicle, language, theme } = useVehicles();
+  const { vehicles, selectedVehicleId, selectVehicle, addVehicle, updateVehicle, deleteVehicle, expenses, reminders, language, theme } = useVehicles();
   const [showAddForm, setShowAddForm] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
   
@@ -246,6 +246,105 @@ export const VehiclesScreen: React.FC = () => {
   const handleSelectVehicle = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     selectVehicle(id);
+  };
+
+  const handleShareReport = async (vehicle: Vehicle) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    
+    // Filter expenses and reminders for this vehicle
+    const vehicleExpenses = expenses.filter(e => e.vehicleId === vehicle.id);
+    const vehicleReminders = reminders.filter(r => r.vehicleId === vehicle.id);
+    
+    const totalSpend = vehicleExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const currency = getCurrencySymbol();
+    
+    let reportText = language === 'tr' 
+      ? `🚗 NEGAUGE DİJİTAL BAKIM KARNESİ 🚗\n`
+      : `🚗 NEGAUGE DIGITAL VEHICLE REPORT 🚗\n`;
+    reportText += `---------------------------------\n`;
+    reportText += `${language === 'tr' ? 'Araç' : 'Vehicle'}: ${vehicle.name}\n`;
+    if (vehicle.plate) reportText += `${language === 'tr' ? 'Plaka' : 'Plate'}: ${vehicle.plate.toUpperCase()}\n`;
+    if (vehicle.year) reportText += `${language === 'tr' ? 'Model Yılı' : 'Year'}: ${vehicle.year}\n`;
+    reportText += `${language === 'tr' ? 'Güncel Kilometre' : 'Current Odometer'}: ${vehicle.currentOdometer.toLocaleString()} KM\n`;
+    reportText += `${language === 'tr' ? 'Toplam Masraf' : 'Total Expense'}: ${currency}${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2 })}\n\n`;
+    
+    // 1. Service / Maintenance History
+    const mainExpenses = vehicleExpenses.filter(e => e.category === 'maintenance');
+    if (mainExpenses.length > 0) {
+      reportText += language === 'tr' ? `🔧 BAKIM & ONARIM GEÇMİŞİ\n` : `🔧 SERVICE & MAINTENANCE HISTORY\n`;
+      reportText += `---------------------------------\n`;
+      [...mainExpenses].sort((a, b) => b.date.localeCompare(a.date)).forEach(e => {
+        reportText += `• ${e.date} | ${e.odometer.toLocaleString()} KM | ${currency}${e.amount.toLocaleString()} ${e.notes ? `\n  ${language === 'tr' ? 'Not' : 'Note'}: ${e.notes}` : ''}\n`;
+      });
+      reportText += `\n`;
+    }
+    
+    // 2. Fuel Log & Efficiency
+    const fuelExpenses = vehicleExpenses.filter(e => e.category === 'fuel');
+    if (fuelExpenses.length > 0) {
+      reportText += language === 'tr' ? `⛽ YAKIT ALIM GEÇMİŞİ\n` : `⛽ FUEL LOG & EFFICIENCY\n`;
+      reportText += `---------------------------------\n`;
+      
+      const sortedFuelAsc = [...fuelExpenses].sort((a, b) => a.odometer - b.odometer);
+      const fuelConsMap: { [id: string]: string } = {};
+      for (let i = 1; i < sortedFuelAsc.length; i++) {
+        const cur = sortedFuelAsc[i];
+        const prev = sortedFuelAsc[i - 1];
+        const dist = cur.odometer - prev.odometer;
+        if (dist > 0 && cur.liters && cur.liters > 0) {
+          fuelConsMap[cur.id] = `(${((cur.liters / dist) * 100).toFixed(1)} L/100km)`;
+        }
+      }
+      
+      [...fuelExpenses].sort((a, b) => b.date.localeCompare(a.date)).forEach(e => {
+        const consStr = fuelConsMap[e.id] ? ` | ${fuelConsMap[e.id]}` : '';
+        const literStr = e.liters ? ` | ${e.liters} Lt` : '';
+        reportText += `• ${e.date} | ${e.odometer.toLocaleString()} KM${literStr} | ${currency}${e.amount.toLocaleString()}${consStr}${e.notes ? `\n  ${language === 'tr' ? 'Not' : 'Note'}: ${e.notes}` : ''}\n`;
+      });
+      reportText += `\n`;
+    }
+    
+    // 3. Other Expenses
+    const otherExpenses = vehicleExpenses.filter(e => e.category !== 'maintenance' && e.category !== 'fuel');
+    if (otherExpenses.length > 0) {
+      reportText += language === 'tr' ? `📊 DİĞER GİDERLER\n` : `📊 OTHER EXPENSES\n`;
+      reportText += `---------------------------------\n`;
+      [...otherExpenses].sort((a, b) => b.date.localeCompare(a.date)).forEach(e => {
+        let catLabel: string = e.category;
+        if (language === 'tr') {
+          catLabel = e.category === 'tax' ? 'Vergi' : e.category === 'insurance' ? 'Sigorta' : e.category === 'wash' ? 'Yıkama' : e.category === 'fine' ? 'Ceza' : e.category === 'parking' ? 'Otopark' : 'Diğer';
+        } else {
+          catLabel = e.category.charAt(0).toUpperCase() + e.category.slice(1);
+        }
+        reportText += `• ${e.date} | ${catLabel} | ${e.odometer.toLocaleString()} KM | ${currency}${e.amount.toLocaleString()} ${e.notes ? `\n  ${language === 'tr' ? 'Not' : 'Note'}: ${e.notes}` : ''}\n`;
+      });
+      reportText += `\n`;
+    }
+    
+    // 4. Active Reminders
+    const activeRems = vehicleReminders.filter(r => !r.isCompleted);
+    if (activeRems.length > 0) {
+      reportText += language === 'tr' ? `🔔 YAKLAŞAN HATIRLATICILAR\n` : `🔔 UPCOMING REMINDERS\n`;
+      reportText += `---------------------------------\n`;
+      activeRems.forEach(r => {
+        const targetStr = r.type === 'date' ? r.targetDate : `${r.targetOdometer?.toLocaleString()} KM`;
+        reportText += `• ${r.title} (Hedef: ${targetStr})\n`;
+      });
+      reportText += `\n`;
+    }
+    
+    reportText += language === 'tr' 
+      ? `Negauge Araç Yöneticisi ile oluşturulmuştur.`
+      : `Generated with Negauge Vehicle Tracker.`;
+    
+    try {
+      await Share.share({
+        message: reportText,
+        title: `${vehicle.name} Raporu`,
+      });
+    } catch (error) {
+      console.log('Share error:', error);
+    }
   };
 
   const validate = () => {
@@ -550,6 +649,12 @@ export const VehiclesScreen: React.FC = () => {
                           <Text style={[styles.statusText, { color: vehicle.color }]}>{t('v_status_active')}</Text>
                         </View>
                         <TouchableOpacity
+                          onPress={() => handleShareReport(vehicle)}
+                          style={[styles.editBtn, { marginRight: 8 }]}
+                        >
+                          <Ionicons name="share-social-outline" size={20} color={vehicle.color} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
                           onPress={() => handleEditClick(vehicle)}
                           style={styles.editBtn}
                         >
@@ -558,6 +663,12 @@ export const VehiclesScreen: React.FC = () => {
                       </View>
                     ) : (
                       <View style={styles.rightActionRow}>
+                        <TouchableOpacity
+                          onPress={() => handleShareReport(vehicle)}
+                          style={[styles.editBtn, { marginRight: 8 }]}
+                        >
+                          <Ionicons name="share-social-outline" size={20} color={currentColors.textMuted} />
+                        </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleEditClick(vehicle)}
                           style={[styles.editBtn, { marginRight: 8 }]}

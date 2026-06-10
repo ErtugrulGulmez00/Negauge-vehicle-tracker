@@ -54,6 +54,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return expenses.filter(e => e.vehicleId === selectedVehicle.id);
   }, [expenses, selectedVehicle]);
 
+  // Fuel consumptions calculation
+  const fuelConsumptions = useMemo(() => {
+    const fuelExpenses = vehicleExpenses
+      .filter(e => e.category === 'fuel')
+      .sort((a, b) => a.odometer - b.odometer);
+    
+    const map: { [id: string]: string } = {};
+    
+    for (let i = 1; i < fuelExpenses.length; i++) {
+      const current = fuelExpenses[i];
+      const prev = fuelExpenses[i - 1];
+      const dist = current.odometer - prev.odometer;
+      
+      if (dist > 0 && current.liters && current.liters > 0) {
+        const consumption = (current.liters / dist) * 100;
+        map[current.id] = `${consumption.toFixed(1)} L/100km`;
+      }
+    }
+    
+    return map;
+  }, [vehicleExpenses]);
+
   // Calculations
   const stats = useMemo(() => {
     if (!selectedVehicle || vehicleExpenses.length === 0) {
@@ -316,7 +338,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                         </Text>
                       ) : null}
                       <Text style={styles.expenseMeta}>
-                        {item.date} • {item.odometer.toLocaleString()} KM
+                        {item.date} • {item.odometer.toLocaleString()} KM{item.category === 'fuel' && item.liters ? ` • ${item.liters} Lt` : ''}{fuelConsumptions[item.id] ? ` • ${fuelConsumptions[item.id]}` : ''}
                       </Text>
                     </View>
                   </View>

@@ -23,6 +23,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
   const [amount, setAmount] = useState(expenseToEdit ? String(expenseToEdit.amount) : '');
   const [category, setCategory] = useState<ExpenseCategory>(expenseToEdit ? expenseToEdit.category : 'fuel');
   const [odometer, setOdometer] = useState(expenseToEdit ? String(expenseToEdit.odometer) : '');
+  const [liters, setLiters] = useState(expenseToEdit && expenseToEdit.liters ? String(expenseToEdit.liters) : '');
   const [date, setDate] = useState(expenseToEdit ? expenseToEdit.date : '');
   const [notes, setNotes] = useState(expenseToEdit && expenseToEdit.notes ? expenseToEdit.notes : '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -85,6 +86,12 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
       newErrors.odometer = t('exp_error_odometer_less', { minOdometer: selectedVehicle.initialOdometer });
     }
     
+    if (category === 'fuel' && liters.trim()) {
+      if (isNaN(Number(liters)) || Number(liters) <= 0) {
+        newErrors.liters = language === 'tr' ? 'Litre miktarı sıfırdan büyük olmalıdır.' : 'Liters must be greater than zero.';
+      }
+    }
+    
     // Simple Date validation regex YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!date.trim() || !dateRegex.test(date)) {
@@ -103,6 +110,8 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
     
     if (!validate()) return;
     
+    const finalLiters = category === 'fuel' && liters.trim() ? Number(liters) : undefined;
+    
     if (expenseToEdit) {
       await updateExpense({
         ...expenseToEdit,
@@ -111,6 +120,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
         odometer: Number(odometer),
         date,
         notes: notes.trim() || undefined,
+        liters: finalLiters,
       });
     } else {
       await addExpense({
@@ -120,6 +130,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
         odometer: Number(odometer),
         date,
         notes: notes.trim() || undefined,
+        liters: finalLiters,
       });
     }
 
@@ -201,6 +212,18 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
             keyboardType="numeric"
             error={errors.odometer}
           />
+
+          {/* Liters Input (Only for fuel category) */}
+          {category === 'fuel' && (
+            <Input
+              label={language === 'tr' ? 'Alınan Litre (İsteğe Bağlı)' : 'Liters Filled (Optional)'}
+              placeholder="Örn: 45.5"
+              value={liters}
+              onChangeText={setLiters}
+              keyboardType="numeric"
+              error={errors.liters}
+            />
+          )}
 
           {/* Date Input with Presets */}
           <View style={styles.dateLabelRow}>

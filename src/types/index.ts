@@ -20,6 +20,7 @@ export interface Expense {
   odometer: number; // KM reading at the time of expense
   category: ExpenseCategory;
   notes?: string;
+  liters?: number;
 }
 
 export interface Reminder {
