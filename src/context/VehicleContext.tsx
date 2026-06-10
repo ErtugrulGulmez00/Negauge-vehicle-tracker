@@ -19,7 +19,7 @@ interface VehicleContextType {
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
   
   // Vehicle Actions
-  addVehicle: (name: string, plate: string, color: string, icon: string, year: number, initialOdometer: number) => Promise<void>;
+  addVehicle: (name: string, plate: string, color: string, icon: string, year: number, initialOdometer: number, imageUri?: string) => Promise<void>;
   updateVehicle: (updatedVehicle: Vehicle) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
   selectVehicle: (id: string) => Promise<void>;
@@ -152,7 +152,8 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
     color: string,
     icon: string,
     year: number,
-    initialOdometer: number
+    initialOdometer: number,
+    imageUri?: string
   ) => {
     const newVehicle: Vehicle = {
       id: generateId(),
@@ -163,6 +164,7 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
       year: year || undefined,
       initialOdometer,
       currentOdometer: initialOdometer,
+      imageUri,
     };
     const updated = [...vehicles, newVehicle];
     await saveVehicles(updated);

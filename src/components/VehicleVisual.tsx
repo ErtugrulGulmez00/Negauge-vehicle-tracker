@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import Svg, { Path, Circle, Defs, RadialGradient, Stop, LinearGradient } from 'react-native-svg';
 
 interface VehicleVisualProps {
-  type: string; // 'car' | 'bicycle' | 'bus' | 'boat'
+  type: string; // 'car' | 'bicycle' | 'suv' | 'van' | 'truck'
   color: string; // Hex color code
   width?: number;
   height?: number;
+  imageUri?: string;
 }
 
 export const VehicleVisual: React.FC<VehicleVisualProps> = ({
@@ -14,10 +15,21 @@ export const VehicleVisual: React.FC<VehicleVisualProps> = ({
   color,
   width = 180,
   height = 80,
+  imageUri,
 }) => {
   // Generate gradient IDs unique to this instance to avoid SVG clashes
   const gradId = `glow-${type}-${color.replace('#', '')}`;
   const metalGradId = `metal-${type}-${color.replace('#', '')}`;
+
+  if (imageUri) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.imageContainer, { width, height, borderColor: color + '40', shadowColor: color }]}>
+          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+        </View>
+      </View>
+    );
+  }
 
   const renderVisual = () => {
     switch (type) {
@@ -348,5 +360,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 10,
+  },
+  imageContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
 });

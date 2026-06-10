@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VehicleVisual } from '../components/VehicleVisual';
+import * as ImagePicker from 'expo-image-picker';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
@@ -45,6 +46,7 @@ export const VehiclesScreen: React.FC = () => {
   const [odometer, setOdometer] = useState('');
   const [selectedColor, setSelectedColor] = useState(theme === 'dark' ? DARK_COLORS.vehicleColors[0] : LIGHT_COLORS.vehicleColors[0]);
   const [selectedIcon, setSelectedIcon] = useState('car');
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   interface SelectedBrandWithModels {
@@ -104,6 +106,103 @@ export const VehiclesScreen: React.FC = () => {
     await fetchModelsForBrand(query, isMoto ? 'motorcycle' : 'car');
   };
 
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          language === 'tr' ? 'İzin Gerekli' : 'Permission Required',
+          language === 'tr' 
+            ? 'Araç fotoğrafı yüklemek için galeri erişim iznine ihtiyacımız var.' 
+            : 'We need gallery access permission to upload a vehicle photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }
+    } catch (error) {
+      Alert.alert(
+        language === 'tr' ? 'Hata' : 'Error',
+        language === 'tr' ? 'Fotoğraf seçilirken bir hata oluştu.' : 'An error occurred while selecting the photo.'
+      );
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          language === 'tr' ? 'İzin Gerekli' : 'Permission Required',
+          language === 'tr' 
+            ? 'Araç fotoğrafı çekmek için kamera erişim iznine ihtiyacımız var.' 
+            : 'We need camera access permission to take a vehicle photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }
+    } catch (error) {
+      Alert.alert(
+        language === 'tr' ? 'Hata' : 'Error',
+        language === 'tr' ? 'Fotoğraf çekilirken bir hata oluştu.' : 'An error occurred while taking the photo.'
+      );
+    }
+  };
+
+  const handleImagePickOptions = () => {
+    const options = [
+      {
+        text: language === 'tr' ? 'Galeriden Seç' : 'Choose from Gallery',
+        onPress: handlePickImage,
+      },
+      {
+        text: language === 'tr' ? 'Kamerayı Aç' : 'Take a Photo',
+        onPress: handleTakePhoto,
+      },
+    ];
+
+    if (imageUri) {
+      options.push({
+        text: language === 'tr' ? 'Mevcut Fotoğrafı Kaldır' : 'Remove Photo',
+        onPress: () => {
+          setImageUri(null);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        },
+      } as any);
+    }
+
+    options.push({
+      text: language === 'tr' ? 'İptal' : 'Cancel',
+      style: 'cancel',
+    } as any);
+
+    Alert.alert(
+      language === 'tr' ? 'Araç Fotoğrafı' : 'Vehicle Photo',
+      language === 'tr' ? 'Bir fotoğraf kaynağı seçin' : 'Select a photo source',
+      options as any
+    );
+  };
+
   const handleEditClick = (vehicle: Vehicle) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setVehicleToEdit(vehicle);
@@ -113,6 +212,7 @@ export const VehiclesScreen: React.FC = () => {
     setOdometer(String(vehicle.initialOdometer));
     setSelectedColor(vehicle.color);
     setSelectedIcon(vehicle.icon);
+    setImageUri(vehicle.imageUri || null);
     setShowAddForm(true);
   };
 
@@ -176,6 +276,7 @@ export const VehiclesScreen: React.FC = () => {
         year: year ? Number(year) : undefined,
         initialOdometer: Number(odometer),
         currentOdometer: Math.max(vehicleToEdit.currentOdometer, Number(odometer)),
+        imageUri: imageUri || undefined,
       });
     } else {
       await addVehicle(
@@ -184,7 +285,8 @@ export const VehiclesScreen: React.FC = () => {
         selectedColor,
         selectedIcon,
         year ? Number(year) : 0,
-        Number(odometer)
+        Number(odometer),
+        imageUri || undefined
       );
     }
 
@@ -195,6 +297,7 @@ export const VehiclesScreen: React.FC = () => {
     setOdometer('');
     setSelectedColor(currentColors.vehicleColors[0]);
     setSelectedIcon('car');
+    setImageUri(null);
     setVehicleToEdit(null);
     setShowAddForm(false);
     
@@ -258,6 +361,7 @@ export const VehiclesScreen: React.FC = () => {
                     setOdometer('');
                     setSelectedColor(currentColors.vehicleColors[0]);
                     setSelectedIcon('car');
+                    setImageUri(null);
                   }}
                 >
                   <Ionicons name="close" size={24} color={currentColors.textSecondary} />
@@ -367,6 +471,49 @@ export const VehiclesScreen: React.FC = () => {
               ))}
             </View>
 
+            {/* Photo Picker */}
+            {imageUri ? (
+              <View style={styles.photoPreviewSection}>
+                <Text style={styles.sectionLabel}>
+                  {language === 'tr' ? 'Araç Fotoğrafı' : 'Vehicle Photo'}
+                </Text>
+                <View style={[styles.photoPreviewWrapper, { borderColor: selectedColor + '60' }]}>
+                  <Image source={{ uri: imageUri }} style={styles.photoPreviewImage} />
+                  <TouchableOpacity
+                    style={styles.removePhotoBadge}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                      setImageUri(null);
+                    }}
+                  >
+                    <Ionicons name="trash" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.changePhotoBadge}
+                    onPress={handleImagePickOptions}
+                  >
+                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                    <Text style={styles.changePhotoText}>
+                      {language === 'tr' ? 'Değiştir' : 'Change'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.photoPickerContainer, { borderColor: selectedColor + '40' }]}
+                onPress={handleImagePickOptions}
+              >
+                <Ionicons name="camera-outline" size={28} color={selectedColor} />
+                <Text style={styles.photoPickerText}>
+                  {language === 'tr' ? 'Araç Fotoğrafı Ekle (İsteğe Bağlı)' : 'Add Vehicle Photo (Optional)'}
+                </Text>
+                <Text style={styles.photoPickerSubtext}>
+                  {language === 'tr' ? 'SVG çizimi yerine bu fotoğraf gösterilir.' : 'This photo will be displayed instead of the SVG drawing.'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <Button
               title={vehicleToEdit ? (language === 'tr' ? 'Güncelle' : 'Update') : t('v_save')}
               onPress={handleSaveVehicle}
@@ -388,7 +535,7 @@ export const VehiclesScreen: React.FC = () => {
                 >
                   <View style={styles.cardLeft}>
                     <View style={{ marginRight: 12, width: 70, height: 35, justifyContent: 'center', alignItems: 'center' }}>
-                      <VehicleVisual type={vehicle.icon} color={vehicle.color} width={70} height={35} />
+                      <VehicleVisual type={vehicle.icon} color={vehicle.color} width={70} height={35} imageUri={vehicle.imageUri} />
                     </View>
                     <View style={styles.vehicleInfo}>
                       <Text style={styles.vehicleName}>{vehicle.name}</Text>
@@ -858,6 +1005,82 @@ const getStyles = (theme: 'dark' | 'light') => {
       color: colors.danger,
       marginTop: 10,
       textAlign: 'center',
+    },
+    photoPickerContainer: {
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
+      marginBottom: 16,
+    },
+    photoPickerText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    photoPickerSubtext: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    photoPreviewSection: {
+      marginBottom: 16,
+    },
+    photoPreviewWrapper: {
+      height: 140,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      overflow: 'hidden',
+      position: 'relative',
+    },
+    photoPreviewImage: {
+      width: '100%',
+      height: '100%',
+      resizeMode: 'cover',
+    },
+    removePhotoBadge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: '#EF4444DF',
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    changePhotoBadge: {
+      position: 'absolute',
+      bottom: 8,
+      right: 8,
+      backgroundColor: '#0F172ADF',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 12,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    changePhotoText: {
+      color: '#FFFFFF',
+      fontSize: 11,
+      fontWeight: '700',
+      marginLeft: 4,
     },
   });
   return memoizedStyles;
