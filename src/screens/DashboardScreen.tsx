@@ -193,7 +193,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
 
           {/* SVG Vehicle Visual representation! */}
-          <VehicleVisual type={selectedVehicle.icon} color={selectedVehicle.color} width={220} height={90} imageUri={selectedVehicle.imageUri} />
+          <VehicleVisual type={selectedVehicle.icon} color={selectedVehicle.color} width={320} height={150} imageUri={selectedVehicle.imageUri} />
 
           {/* Card footer details */}
           <View style={styles.visualFooter}>
