@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
 import { Vehicle } from '../types';
+import { VEHICLE_CATALOG, CatalogBrand } from '../data/vehicleCatalog';
 
 export const VehiclesScreen: React.FC = () => {
   const { vehicles, selectedVehicleId, selectVehicle, addVehicle, updateVehicle, deleteVehicle, language, theme } = useVehicles();
@@ -23,6 +24,11 @@ export const VehiclesScreen: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(theme === 'dark' ? DARK_COLORS.vehicleColors[0] : LIGHT_COLORS.vehicleColors[0]);
   const [selectedIcon, setSelectedIcon] = useState('car');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Catalog Modal States
+  const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [selectedCatalogBrand, setSelectedCatalogBrand] = useState<CatalogBrand | null>(null);
 
   const handleEditClick = (vehicle: Vehicle) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -184,6 +190,20 @@ export const VehiclesScreen: React.FC = () => {
               )}
             </View>
 
+            {/* Catalog Select Trigger */}
+            <TouchableOpacity
+              style={styles.catalogSelectBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setShowCatalogModal(true);
+              }}
+            >
+              <Ionicons name="search-outline" size={16} color={currentColors.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.catalogSelectBtnText}>
+                {language === 'tr' ? 'Marka & Model Kataloğundan Seç' : 'Select Brand & Model from Catalog'}
+              </Text>
+            </TouchableOpacity>
+
             <Input
               label={`${t('v_name')} *`}
               placeholder={t('v_name_example')}
@@ -339,6 +359,105 @@ export const VehiclesScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Catalog Modal */}
+      <Modal visible={showCatalogModal} animationType="slide" transparent={false}>
+        <View style={[styles.modalContainer, { backgroundColor: currentColors.background }]}>
+          <View style={styles.modalHeader}>
+            {selectedCatalogBrand ? (
+              <TouchableOpacity
+                onPress={() => setSelectedCatalogBrand(null)}
+                style={styles.modalBackBtn}
+              >
+                <Ionicons name="arrow-back" size={24} color={currentColors.textPrimary} />
+              </TouchableOpacity>
+            ) : <View style={{ width: 24 }} />}
+            <Text style={styles.modalTitle}>
+              {selectedCatalogBrand 
+                ? (language === 'tr' ? `${selectedCatalogBrand.name} Modelleri` : `${selectedCatalogBrand.name} Models`) 
+                : (language === 'tr' ? 'Marka Seçin' : 'Select Brand')}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowCatalogModal(false);
+                setSelectedCatalogBrand(null);
+                setCatalogSearch('');
+              }}
+              style={styles.modalCloseBtn}
+            >
+              <Ionicons name="close" size={24} color={currentColors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Input */}
+          <View style={styles.modalSearchContainer}>
+            <Ionicons name="search" size={20} color={currentColors.textMuted} style={{ marginRight: 8 }} />
+            <TextInput
+              style={[styles.modalSearchInput, { color: currentColors.textPrimary }]}
+              placeholder={language === 'tr' ? 'Ara...' : 'Search...'}
+              placeholderTextColor={currentColors.textMuted}
+              value={catalogSearch}
+              onChangeText={setCatalogSearch}
+            />
+          </View>
+
+          {/* Catalog Lists */}
+          {!selectedCatalogBrand ? (
+            <FlatList
+              data={VEHICLE_CATALOG.filter(b => b.name.toLowerCase().includes(catalogSearch.toLowerCase()))}
+              keyExtractor={item => item.name}
+              contentContainerStyle={styles.modalListContent}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItemRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    setSelectedCatalogBrand(item);
+                    setCatalogSearch('');
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons 
+                      name={item.type === 'motorcycle' ? 'bicycle-outline' : 'car-outline'} 
+                      size={20} 
+                      color={currentColors.primary} 
+                      style={{ marginRight: 12 }} 
+                    />
+                    <Text style={styles.modalItemText}>{item.name}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={currentColors.textMuted} />
+                </TouchableOpacity>
+              )}
+            />
+          ) : (
+            <FlatList
+              data={selectedCatalogBrand.models.filter(m => m.toLowerCase().includes(catalogSearch.toLowerCase()))}
+              keyExtractor={item => item}
+              contentContainerStyle={styles.modalListContent}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItemRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                    setName(`${selectedCatalogBrand.name} ${item}`);
+                    if (selectedCatalogBrand.type === 'motorcycle') {
+                      setSelectedIcon('bicycle');
+                    } else {
+                      setSelectedIcon('car');
+                    }
+                    setShowCatalogModal(false);
+                    setSelectedCatalogBrand(null);
+                    setCatalogSearch('');
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                  <Ionicons name="checkmark-circle-outline" size={20} color={currentColors.success} />
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </Animated.View>
   );
 };
@@ -525,6 +644,81 @@ const getStyles = (theme: 'dark' | 'light') => {
       alignItems: 'center',
       backgroundColor: theme === 'dark' ? '#FFFFFF10' : '#00000005',
       borderRadius: 10,
+    },
+    catalogSelectBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F1F5F9',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      marginBottom: 16,
+      justifyContent: 'center',
+    },
+    catalogSelectBtnText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    modalContainer: {
+      flex: 1,
+      paddingTop: 50,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    modalBackBtn: {
+      padding: 4,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    modalCloseBtn: {
+      padding: 4,
+    },
+    modalSearchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F1F5F9',
+      borderRadius: 10,
+      margin: 16,
+      paddingHorizontal: 12,
+      height: 44,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    modalSearchInput: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      paddingVertical: 8,
+    },
+    modalListContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 40,
+    },
+    modalItemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    modalItemText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
     },
   });
   return memoizedStyles;

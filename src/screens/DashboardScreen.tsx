@@ -10,6 +10,7 @@ import { Expense } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t, getCurrencySymbol } from '../localization/i18n';
 import { getLocalMonthString, getLocalDateDaysAgo } from '../utils/date';
+import { VehicleVisual } from '../components/VehicleVisual';
 
 interface DashboardScreenProps {
   onAddExpensePress: () => void;
@@ -157,39 +158,55 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Modern Greeting (Centered Title) */}
-        <View style={styles.headerWelcomeRow}>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.welcomeSubtitle}>OTOBÜTÇEM</Text>
-          </View>
-        </View>
-
-        {/* Hero Card: Monthly Spend */}
+        {/* Premium Vehicle Visual Showcase Card */}
         <Card
           style={[
-            styles.heroCard,
+            styles.visualShowcaseCard,
             {
-              borderColor: selectedVehicle.color + '30',
-              borderWidth: 1,
+              borderColor: selectedVehicle.color + '25',
               shadowColor: selectedVehicle.color,
             }
           ]}
           onPress={onNavigateToVehicles}
         >
-          <View style={[styles.heroGradientLine, { backgroundColor: selectedVehicle.color }]} />
-          <View style={styles.heroContent}>
-            <View style={styles.heroHeader}>
-              <Text style={styles.heroLabel}>{t('db_monthly_spend')}</Text>
-              <View style={[styles.heroIconContainer, { backgroundColor: selectedVehicle.color + '15' }]}>
-                <Ionicons name="wallet" size={20} color={selectedVehicle.color} />
-              </View>
+          <View style={styles.visualCardBackground} />
+          
+          <View style={styles.visualHeader}>
+            <View>
+              <Text style={styles.visualVehicleName} numberOfLines={1}>{selectedVehicle.name}</Text>
+              {selectedVehicle.plate ? (
+                <View style={styles.trPlateBadge}>
+                  <View style={styles.trPlateBlue}><Text style={styles.trPlateBlueText}>TR</Text></View>
+                  <Text style={styles.trPlateText}>{selectedVehicle.plate.toUpperCase()}</Text>
+                </View>
+              ) : (
+                <Text style={[styles.visualVehicleSub, { color: currentColors.textMuted }]}>
+                  {selectedVehicle.year ? `${selectedVehicle.year}` : '---'}
+                </Text>
+              )}
             </View>
-            <Text style={styles.heroValue}>
-              {getCurrencySymbol()}{stats.monthly.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
-            <View style={styles.heroFooter}>
-              <Ionicons name="calendar-outline" size={13} color={currentColors.textMuted} style={{ marginRight: 4 }} />
-              <Text style={styles.heroSubText}>{t('db_current_month')}</Text>
+            <View style={[styles.visualYearBadge, { backgroundColor: selectedVehicle.color + '15' }]}>
+              <Text style={[styles.visualYearText, { color: selectedVehicle.color }]}>
+                {selectedVehicle.year || '----'}
+              </Text>
+            </View>
+          </View>
+
+          {/* SVG Vehicle Visual representation! */}
+          <VehicleVisual type={selectedVehicle.icon} color={selectedVehicle.color} width={220} height={90} />
+
+          {/* Card footer details */}
+          <View style={styles.visualFooter}>
+            <View style={styles.visualFooterCol}>
+              <Text style={[styles.visualFooterLabel, { color: currentColors.textMuted }]}>{t('db_odometer_title')}</Text>
+              <Text style={styles.visualFooterVal}>{selectedVehicle.currentOdometer.toLocaleString()} KM</Text>
+            </View>
+            <View style={styles.visualFooterDivider} />
+            <View style={styles.visualFooterCol}>
+              <Text style={[styles.visualFooterLabel, { color: currentColors.textMuted }]}>{t('db_monthly_spend')}</Text>
+              <Text style={[styles.visualFooterVal, { color: selectedVehicle.color }]}>
+                {getCurrencySymbol()}{stats.monthly.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </Text>
             </View>
           </View>
         </Card>
@@ -657,6 +674,112 @@ const getStyles = (theme: 'dark' | 'light') => {
     },
     emptyBtn: {
       width: '80%',
+    },
+    visualShowcaseCard: {
+      padding: 16,
+      marginBottom: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      overflow: 'hidden',
+      position: 'relative',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.15,
+      shadowRadius: 16,
+      elevation: 6,
+    },
+    visualCardBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: theme === 'dark' ? '#0F172A' : '#FFFFFF',
+      opacity: 0.25,
+    },
+    visualHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 10,
+    },
+    visualVehicleName: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    visualVehicleSub: {
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    trPlateBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      borderRadius: 4,
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F8FAFC',
+      marginTop: 6,
+      alignSelf: 'flex-start',
+      overflow: 'hidden',
+    },
+    trPlateBlue: {
+      backgroundColor: '#003399',
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    trPlateBlueText: {
+      color: '#FFFFFF',
+      fontSize: 8,
+      fontWeight: '800',
+    },
+    trPlateText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      paddingHorizontal: 6,
+      letterSpacing: 0.5,
+    },
+    visualYearBadge: {
+      paddingVertical: 4,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+    },
+    visualYearText: {
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    visualFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+      paddingTop: 12,
+      marginTop: 8,
+    },
+    visualFooterCol: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    visualFooterDivider: {
+      width: 1,
+      height: 24,
+      backgroundColor: colors.cardBorder,
+    },
+    visualFooterLabel: {
+      fontSize: 10,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    visualFooterVal: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.textPrimary,
     },
   });
   return memoizedStyles;
