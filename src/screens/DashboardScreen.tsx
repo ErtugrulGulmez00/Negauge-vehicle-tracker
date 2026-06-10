@@ -159,7 +159,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Modern Greeting (Centered Title) */}
         <View style={styles.headerWelcomeRow}>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.welcomeSubtitle}>Negauge</Text>
+            <Text style={styles.welcomeSubtitle}>OtoBütçem</Text>
             <Text style={styles.welcomeTitle}>{t('tab_dashboard')}</Text>
           </View>
         </View>
