@@ -25,52 +25,61 @@ export const VehiclesScreen: React.FC = () => {
   const [selectedIcon, setSelectedIcon] = useState('car');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  interface SelectedBrandWithModels {
+    name: string;
+    type: 'car' | 'motorcycle';
+    models: string[];
+  }
+
   // Catalog Modal States
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
-  const [selectedCatalogBrand, setSelectedCatalogBrand] = useState<CatalogBrand | null>(null);
+  const [selectedCatalogBrand, setSelectedCatalogBrand] = useState<SelectedBrandWithModels | null>(null);
   const [isSearchingOnline, setIsSearchingOnline] = useState(false);
   const [onlineSearchError, setOnlineSearchError] = useState('');
 
-  const handleSearchOnline = async (query: string) => {
-    if (!query) return;
+  const fetchModelsForBrand = async (brandName: string, type: 'car' | 'motorcycle') => {
     setIsSearchingOnline(true);
     setOnlineSearchError('');
     try {
-      const response = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(query)}?format=json`);
+      const response = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(brandName)}?format=json`);
       const data = await response.json();
       
       if (data && data.Results && data.Results.length > 0) {
         const rawModels = data.Results.map((r: any) => r.Model_Name as string);
         const uniqueModels = Array.from(new Set(rawModels)).sort() as string[];
-        const officialMake = data.Results[0].Make_Name || query.toUpperCase();
-        
-        const isMoto = query.toLowerCase().includes('moto') || 
-                       query.toLowerCase().includes('yamaha') || 
-                       query.toLowerCase().includes('honda') || 
-                       query.toLowerCase().includes('kawasaki') || 
-                       query.toLowerCase().includes('ktm') || 
-                       query.toLowerCase().includes('vespa');
+        const officialMake = data.Results[0].Make_Name || brandName;
 
-        const onlineBrand: CatalogBrand = {
+        const brandWithModels: SelectedBrandWithModels = {
           name: officialMake,
-          type: isMoto ? 'motorcycle' : 'car',
+          type: type,
           models: uniqueModels,
         };
         
-        setSelectedCatalogBrand(onlineBrand);
+        setSelectedCatalogBrand(brandWithModels);
         setCatalogSearch('');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       } else {
-        setOnlineSearchError(language === 'tr' ? 'Aradığınız marka bulunamadı.' : 'Brand not found.');
+        setOnlineSearchError(language === 'tr' ? 'Bu marka için model bulunamadı.' : 'No models found for this brand.');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       }
     } catch (error) {
-      setOnlineSearchError(language === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error occurred.');
+      setOnlineSearchError(language === 'tr' ? 'İnternet bağlantısı hatası oluştu.' : 'Network connection error occurred.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     } finally {
       setIsSearchingOnline(false);
     }
+  };
+
+  const handleSearchOnline = async (query: string) => {
+    if (!query) return;
+    const isMoto = query.toLowerCase().includes('moto') || 
+                   query.toLowerCase().includes('yamaha') || 
+                   query.toLowerCase().includes('honda') || 
+                   query.toLowerCase().includes('kawasaki') || 
+                   query.toLowerCase().includes('ktm') || 
+                   query.toLowerCase().includes('vespa');
+    await fetchModelsForBrand(query, isMoto ? 'motorcycle' : 'car');
   };
 
   const handleEditClick = (vehicle: Vehicle) => {
@@ -445,7 +454,14 @@ export const VehiclesScreen: React.FC = () => {
           </View>
 
           {/* Catalog Lists */}
-          {!selectedCatalogBrand ? (
+          {isSearchingOnline ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+              <ActivityIndicator color={currentColors.primary} size="large" />
+              <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '700', color: currentColors.textSecondary, textAlign: 'center' }}>
+                {language === 'tr' ? 'Modeller yükleniyor...' : 'Loading models...'}
+              </Text>
+            </View>
+          ) : !selectedCatalogBrand ? (
             <FlatList
               data={VEHICLE_CATALOG.filter(b => b.name.toLowerCase().includes(catalogSearch.toLowerCase()))}
               keyExtractor={item => item.name}
@@ -454,9 +470,9 @@ export const VehiclesScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.modalItemRow}
                   onPress={() => {
+                    if (isSearchingOnline) return;
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                    setSelectedCatalogBrand(item);
-                    setCatalogSearch('');
+                    fetchModelsForBrand(item.name, item.type);
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -475,24 +491,15 @@ export const VehiclesScreen: React.FC = () => {
                 if (!catalogSearch.trim()) return null;
                 return (
                   <View style={styles.onlineSearchFooter}>
-                    {isSearchingOnline ? (
-                      <View style={styles.onlineSearchStatus}>
-                        <ActivityIndicator color={currentColors.primary} size="small" style={{ marginRight: 8 }} />
-                        <Text style={[styles.onlineSearchText, { color: currentColors.textSecondary }]}>
-                          {language === 'tr' ? 'İnternette aranıyor...' : 'Searching online...'}
-                        </Text>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.onlineSearchBtn}
-                        onPress={() => handleSearchOnline(catalogSearch.trim())}
-                      >
-                        <Ionicons name="earth" size={18} color={currentColors.primary} style={{ marginRight: 8 }} />
-                        <Text style={styles.onlineSearchBtnText}>
-                          {language === 'tr' ? `İnternette "${catalogSearch}" ara...` : `Search "${catalogSearch}" online...`}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      style={styles.onlineSearchBtn}
+                      onPress={() => handleSearchOnline(catalogSearch.trim())}
+                    >
+                      <Ionicons name="earth" size={18} color={currentColors.primary} style={{ marginRight: 8 }} />
+                      <Text style={styles.onlineSearchBtnText}>
+                        {language === 'tr' ? `İnternette "${catalogSearch}" ara...` : `Search "${catalogSearch}" online...`}
+                      </Text>
+                    </TouchableOpacity>
                     {onlineSearchError ? (
                       <Text style={styles.onlineSearchErrorText}>{onlineSearchError}</Text>
                     ) : null}
