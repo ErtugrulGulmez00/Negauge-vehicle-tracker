@@ -12,11 +12,13 @@ import { t, getCurrencySymbol } from '../localization/i18n';
 
 interface DashboardScreenProps {
   onAddExpensePress: () => void;
+  onEditExpensePress: (expense: Expense) => void;
   onNavigateToVehicles: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onAddExpensePress,
+  onEditExpensePress,
   onNavigateToVehicles,
 }) => {
   const { selectedVehicle, expenses, deleteExpense, updateVehicle, theme } = useVehicles();
@@ -306,12 +308,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     <Text style={styles.expenseAmount}>
                       {getCurrencySymbol()}{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </Text>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteExpense(item.id)}
-                      style={styles.trashBtn}
-                    >
-                      <Ionicons name="trash-outline" size={16} color={currentColors.textMuted} />
-                    </TouchableOpacity>
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        onPress={() => onEditExpensePress(item)}
+                        style={styles.editBtn}
+                      >
+                        <Ionicons name="create-outline" size={16} color={currentColors.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteExpense(item.id)}
+                        style={styles.trashBtn}
+                      >
+                        <Ionicons name="trash-outline" size={16} color={currentColors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </Card>
               );
@@ -613,9 +623,17 @@ const getStyles = (theme: 'dark' | 'light') => {
       fontWeight: '800',
       color: colors.textPrimary,
     },
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    editBtn: {
+      padding: 4,
+      marginRight: 8,
+    },
     trashBtn: {
       padding: 4,
-      marginTop: 4,
     },
     emptyContainer: {
       flex: 1,

@@ -31,6 +31,7 @@ interface VehicleContextType {
   
   // Reminder Actions
   addReminder: (reminder: Omit<Reminder, 'id' | 'isCompleted'>) => Promise<void>;
+  updateReminder: (updatedReminder: Reminder) => Promise<void>;
   toggleReminder: (id: string) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
   
@@ -272,6 +273,11 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await saveReminders(updated);
   };
 
+  const updateReminder = async (updatedReminder: Reminder) => {
+    const updated = reminders.map(r => (r.id === updatedReminder.id ? updatedReminder : r));
+    await saveReminders(updated);
+  };
+
   const toggleReminder = async (id: string) => {
     const updated = reminders.map(r => (r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
     await saveReminders(updated);
@@ -370,6 +376,7 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateExpense,
         deleteExpense,
         addReminder,
+        updateReminder,
         toggleReminder,
         deleteReminder,
         exportData,

@@ -8,10 +8,12 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
+import { Vehicle } from '../types';
 
 export const VehiclesScreen: React.FC = () => {
-  const { vehicles, selectedVehicleId, selectVehicle, addVehicle, deleteVehicle, theme } = useVehicles();
+  const { vehicles, selectedVehicleId, selectVehicle, addVehicle, updateVehicle, deleteVehicle, language, theme } = useVehicles();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
   
   // Form States
   const [name, setName] = useState('');
@@ -21,6 +23,18 @@ export const VehiclesScreen: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(theme === 'dark' ? DARK_COLORS.vehicleColors[0] : LIGHT_COLORS.vehicleColors[0]);
   const [selectedIcon, setSelectedIcon] = useState('car');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handleEditClick = (vehicle: Vehicle) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setVehicleToEdit(vehicle);
+    setName(vehicle.name);
+    setPlate(vehicle.plate || '');
+    setYear(vehicle.year ? String(vehicle.year) : '');
+    setOdometer(String(vehicle.initialOdometer));
+    setSelectedColor(vehicle.color);
+    setSelectedIcon(vehicle.icon);
+    setShowAddForm(true);
+  };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -68,17 +82,30 @@ export const VehiclesScreen: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAddVehicle = async () => {
+  const handleSaveVehicle = async () => {
     if (!validate()) return;
     
-    await addVehicle(
-      name.trim(),
-      plate.trim(),
-      selectedColor,
-      selectedIcon,
-      year ? Number(year) : 0,
-      Number(odometer)
-    );
+    if (vehicleToEdit) {
+      await updateVehicle({
+        ...vehicleToEdit,
+        name: name.trim(),
+        plate: plate.trim() || undefined,
+        color: selectedColor,
+        icon: selectedIcon,
+        year: year ? Number(year) : undefined,
+        initialOdometer: Number(odometer),
+        currentOdometer: Math.max(vehicleToEdit.currentOdometer, Number(odometer)),
+      });
+    } else {
+      await addVehicle(
+        name.trim(),
+        plate.trim(),
+        selectedColor,
+        selectedIcon,
+        year ? Number(year) : 0,
+        Number(odometer)
+      );
+    }
 
     // Reset Form
     setName('');
@@ -87,6 +114,7 @@ export const VehiclesScreen: React.FC = () => {
     setOdometer('');
     setSelectedColor(currentColors.vehicleColors[0]);
     setSelectedIcon('car');
+    setVehicleToEdit(null);
     setShowAddForm(false);
     
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -134,13 +162,21 @@ export const VehiclesScreen: React.FC = () => {
           <Card style={styles.formCard}>
             <View style={styles.formHeader}>
               <Text style={styles.formTitle}>
-                {vehicles.length === 0 ? t('v_add_first') : t('v_add_new')}
+                {vehicleToEdit ? (language === 'tr' ? 'Aracı Düzenle' : 'Edit Vehicle') : (vehicles.length === 0 ? t('v_add_first') : t('v_add_new'))}
               </Text>
               {vehicles.length > 0 && (
                 <TouchableOpacity
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                     setShowAddForm(false);
+                    setVehicleToEdit(null);
+                    // Reset Form
+                    setName('');
+                    setPlate('');
+                    setYear('');
+                    setOdometer('');
+                    setSelectedColor(currentColors.vehicleColors[0]);
+                    setSelectedIcon('car');
                   }}
                 >
                   <Ionicons name="close" size={24} color={currentColors.textSecondary} />
@@ -237,8 +273,8 @@ export const VehiclesScreen: React.FC = () => {
             </View>
 
             <Button
-              title={t('v_save')}
-              onPress={handleAddVehicle}
+              title={vehicleToEdit ? (language === 'tr' ? 'Güncelle' : 'Update') : t('v_save')}
+              onPress={handleSaveVehicle}
               style={styles.submitBtn}
             />
           </Card>
@@ -269,16 +305,32 @@ export const VehiclesScreen: React.FC = () => {
                   </View>
                   <View style={styles.cardRight}>
                     {isSelected ? (
-                      <View style={[styles.statusBadge, { backgroundColor: vehicle.color + '30' }]}>
-                        <Text style={[styles.statusText, { color: vehicle.color }]}>{t('v_status_active')}</Text>
+                      <View style={styles.rightActionRow}>
+                        <View style={[styles.statusBadge, { backgroundColor: vehicle.color + '30', marginRight: 8 }]}>
+                          <Text style={[styles.statusText, { color: vehicle.color }]}>{t('v_status_active')}</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleEditClick(vehicle)}
+                          style={styles.editBtn}
+                        >
+                          <Ionicons name="create-outline" size={20} color={vehicle.color} />
+                        </TouchableOpacity>
                       </View>
                     ) : (
-                      <TouchableOpacity
-                        onPress={() => handleDelete(vehicle.id, vehicle.name)}
-                        style={styles.deleteBtn}
-                      >
-                        <Ionicons name="trash-outline" size={20} color={currentColors.danger} />
-                      </TouchableOpacity>
+                      <View style={styles.rightActionRow}>
+                        <TouchableOpacity
+                          onPress={() => handleEditClick(vehicle)}
+                          style={[styles.editBtn, { marginRight: 8 }]}
+                        >
+                          <Ionicons name="create-outline" size={20} color={currentColors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDelete(vehicle.id, vehicle.name)}
+                          style={styles.deleteBtn}
+                        >
+                          <Ionicons name="trash-outline" size={20} color={currentColors.danger} />
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </View>
                 </Card>
@@ -460,6 +512,18 @@ const getStyles = (theme: 'dark' | 'light') => {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#EF444415',
+      borderRadius: 10,
+    },
+    rightActionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    editBtn: {
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme === 'dark' ? '#FFFFFF10' : '#00000005',
       borderRadius: 10,
     },
   });

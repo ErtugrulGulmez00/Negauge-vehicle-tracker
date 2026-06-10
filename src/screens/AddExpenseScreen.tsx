@@ -6,23 +6,24 @@ import { COLORS, DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { ExpenseCategory } from '../types';
+import { Expense, ExpenseCategory } from '../types';
 import * as Haptics from 'expo-haptics';
 import { t, getCurrencySymbol } from '../localization/i18n';
 
 interface AddExpenseScreenProps {
   onSuccess: () => void;
+  expenseToEdit?: Expense;
 }
 
-export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess }) => {
-  const { selectedVehicle, addExpense, theme } = useVehicles();
+export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, expenseToEdit }) => {
+  const { selectedVehicle, addExpense, updateExpense, language, theme } = useVehicles();
   
   // Form States
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('fuel');
-  const [odometer, setOdometer] = useState('');
-  const [date, setDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const [amount, setAmount] = useState(expenseToEdit ? String(expenseToEdit.amount) : '');
+  const [category, setCategory] = useState<ExpenseCategory>(expenseToEdit ? expenseToEdit.category : 'fuel');
+  const [odometer, setOdometer] = useState(expenseToEdit ? String(expenseToEdit.odometer) : '');
+  const [date, setDate] = useState(expenseToEdit ? expenseToEdit.date : '');
+  const [notes, setNotes] = useState(expenseToEdit && expenseToEdit.notes ? expenseToEdit.notes : '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,8 +56,9 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
     { type: 'other', label: t('cat_other'), icon: 'ellipsis-horizontal-outline', color: currentColors.textSecondary },
   ];
 
-  // Set today's date by default in YYYY-MM-DD format
+  // Set today's date by default in YYYY-MM-DD format (only if not editing)
   useEffect(() => {
+    if (expenseToEdit) return;
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -66,7 +68,7 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
     if (selectedVehicle) {
       setOdometer(String(selectedVehicle.currentOdometer));
     }
-  }, [selectedVehicle]);
+  }, [selectedVehicle, expenseToEdit]);
 
   const setPresetDate = (daysAgo: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -107,14 +109,25 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
     
     if (!validate()) return;
     
-    await addExpense({
-      vehicleId: selectedVehicle.id,
-      amount: Number(amount),
-      category,
-      odometer: Number(odometer),
-      date,
-      notes: notes.trim() || undefined,
-    });
+    if (expenseToEdit) {
+      await updateExpense({
+        ...expenseToEdit,
+        amount: Number(amount),
+        category,
+        odometer: Number(odometer),
+        date,
+        notes: notes.trim() || undefined,
+      });
+    } else {
+      await addExpense({
+        vehicleId: selectedVehicle.id,
+        amount: Number(amount),
+        category,
+        odometer: Number(odometer),
+        date,
+        notes: notes.trim() || undefined,
+      });
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     onSuccess();
@@ -135,7 +148,9 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess })
     <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{t('exp_title')}</Text>
+          <Text style={styles.title}>
+            {expenseToEdit ? (language === 'tr' ? 'Masrafı Düzenle' : 'Edit Expense') : t('exp_title')}
+          </Text>
           <Text style={styles.vehicleSubtitle}>{selectedVehicle.name}</Text>
         </View>
 

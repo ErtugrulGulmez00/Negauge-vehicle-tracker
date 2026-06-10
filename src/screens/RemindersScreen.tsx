@@ -11,8 +11,19 @@ import * as Haptics from 'expo-haptics';
 import { t } from '../localization/i18n';
 
 export const RemindersScreen: React.FC = () => {
-  const { selectedVehicle, reminders, addReminder, toggleReminder, deleteReminder, theme } = useVehicles();
+  const { selectedVehicle, reminders, addReminder, updateReminder, toggleReminder, deleteReminder, language, theme } = useVehicles();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
+
+  const handleEditClick = (reminder: Reminder) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setReminderToEdit(reminder);
+    setTitle(reminder.title);
+    setType(reminder.type);
+    setTargetDate(reminder.targetDate || '');
+    setTargetOdometer(reminder.targetOdometer ? String(reminder.targetOdometer) : '');
+    setShowAddForm(true);
+  };
 
   // Form States
   const [title, setTitle] = useState('');
@@ -66,21 +77,32 @@ export const RemindersScreen: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleAddReminder = async () => {
+  const handleSaveReminder = async () => {
     if (!selectedVehicle) return;
     if (!validate()) return;
 
-    await addReminder({
-      vehicleId: selectedVehicle.id,
-      title: title.trim(),
-      type,
-      targetDate: type === 'date' ? targetDate : undefined,
-      targetOdometer: type === 'odometer' ? Number(targetOdometer) : undefined,
-    });
+    if (reminderToEdit) {
+      await updateReminder({
+        ...reminderToEdit,
+        title: title.trim(),
+        type,
+        targetDate: type === 'date' ? targetDate : undefined,
+        targetOdometer: type === 'odometer' ? Number(targetOdometer) : undefined,
+      });
+    } else {
+      await addReminder({
+        vehicleId: selectedVehicle.id,
+        title: title.trim(),
+        type,
+        targetDate: type === 'date' ? targetDate : undefined,
+        targetOdometer: type === 'odometer' ? Number(targetOdometer) : undefined,
+      });
+    }
 
     setTitle('');
     setTargetDate('');
     setTargetOdometer('');
+    setReminderToEdit(null);
     setShowAddForm(false);
     
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -154,11 +176,17 @@ export const RemindersScreen: React.FC = () => {
         {showAddForm ? (
           <Card style={styles.formCard}>
             <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>{t('rem_add_reminder')}</Text>
+              <Text style={styles.formTitle}>
+                {reminderToEdit ? (language === 'tr' ? 'Hatırlatıcıyı Düzenle' : 'Edit Reminder') : t('rem_add_reminder')}
+              </Text>
               <TouchableOpacity
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                   setShowAddForm(false);
+                  setReminderToEdit(null);
+                  setTitle('');
+                  setTargetDate('');
+                  setTargetOdometer('');
                 }}
               >
                 <Ionicons name="close" size={24} color={currentColors.textSecondary} />
@@ -226,8 +254,8 @@ export const RemindersScreen: React.FC = () => {
             )}
 
             <Button
-              title={t('rem_add_reminder')}
-              onPress={handleAddReminder}
+              title={reminderToEdit ? (language === 'tr' ? 'Güncelle' : 'Update') : t('rem_add_reminder')}
+              onPress={handleSaveReminder}
               style={styles.submitBtn}
             />
           </Card>
@@ -288,6 +316,12 @@ export const RemindersScreen: React.FC = () => {
                         <Text style={styles.dueText}>{t('rem_status_due').toUpperCase()}</Text>
                       </View>
                     )}
+                    <TouchableOpacity
+                      onPress={() => handleEditClick(item)}
+                      style={styles.editBtn}
+                    >
+                      <Ionicons name="create-outline" size={18} color={currentColors.textMuted} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => handleDelete(item.id)}
                       style={styles.trashBtn}
@@ -482,6 +516,10 @@ const getStyles = (theme: 'dark' | 'light') => {
       fontSize: 9,
       color: colors.warning,
       fontWeight: '800',
+    },
+    editBtn: {
+      padding: 6,
+      marginRight: 6,
     },
     trashBtn: {
       padding: 6,

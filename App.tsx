@@ -11,7 +11,7 @@ import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { RemindersScreen } from './src/screens/RemindersScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
-import { Reminder } from './src/types';
+import { Reminder, Expense } from './src/types';
 import * as Haptics from 'expo-haptics';
 import { 
   useFonts, 
@@ -34,6 +34,7 @@ function MainAppContent() {
   });
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | undefined>(undefined);
 
   const styles = getStyles(theme);
 
@@ -41,6 +42,7 @@ function MainAppContent() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setActiveTab(tab);
     setShowAddExpense(false);
+    setExpenseToEdit(undefined);
   };
 
   // Check if there are active due reminders
@@ -61,8 +63,16 @@ function MainAppContent() {
   }, [reminders, selectedVehicle]);
 
   const renderScreen = () => {
-    if (showAddExpense) {
-      return <AddExpenseScreen onSuccess={() => setShowAddExpense(false)} />;
+    if (showAddExpense || expenseToEdit) {
+      return (
+        <AddExpenseScreen
+          expenseToEdit={expenseToEdit}
+          onSuccess={() => {
+            setShowAddExpense(false);
+            setExpenseToEdit(undefined);
+          }}
+        />
+      );
     }
 
     switch (activeTab) {
@@ -84,6 +94,7 @@ function MainAppContent() {
             )}
             <DashboardScreen
               onAddExpensePress={() => setShowAddExpense(true)}
+              onEditExpensePress={(expense) => setExpenseToEdit(expense)}
               onNavigateToVehicles={() => handleTabChange('vehicles')}
             />
           </View>
