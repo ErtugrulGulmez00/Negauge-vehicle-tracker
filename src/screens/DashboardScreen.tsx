@@ -26,6 +26,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const { selectedVehicle, expenses, deleteExpense, updateVehicle, language, theme } = useVehicles();
   const [quickOdo, setQuickOdo] = useState('');
   const [showOdoEdit, setShowOdoEdit] = useState(false);
+  const [budgetVal, setBudgetVal] = useState('');
+  const [showBudgetEdit, setShowBudgetEdit] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -121,6 +123,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
     setQuickOdo('');
     setShowOdoEdit(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
+  const handleUpdateBudget = async () => {
+    if (!selectedVehicle) return;
+    const nextBudget = Number(budgetVal);
+    
+    if (isNaN(nextBudget) || nextBudget < 0) {
+      Alert.alert(
+        language === 'tr' ? 'Geçersiz Bütçe' : 'Invalid Budget', 
+        language === 'tr' ? 'Lütfen sıfırdan büyük geçerli bir sayı girin.' : 'Please enter a valid positive number.'
+      );
+      return;
+    }
+
+    await updateVehicle({
+      ...selectedVehicle,
+      monthlyBudget: nextBudget > 0 ? nextBudget : undefined,
+    });
+
+    setBudgetVal('');
+    setShowBudgetEdit(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   };
 
@@ -257,6 +281,109 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </Card>
           </View>
         </View>
+
+        {/* Monthly Budget Card */}
+        <Card style={[styles.odoCard, { borderColor: selectedVehicle.color + '25', borderWidth: 1, marginBottom: 20 }]}>
+          <View style={styles.odoCardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={[styles.odoIconContainer, { backgroundColor: selectedVehicle.color + '15' }]}>
+                <Ionicons name="pie-chart" size={18} color={selectedVehicle.color} />
+              </View>
+              <Text style={styles.odoCardTitle}>
+                {language === 'tr' ? 'Aylık Harcama Hedefi' : 'Monthly Spending Budget'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                setShowBudgetEdit(!showBudgetEdit);
+                if (!showBudgetEdit) {
+                  setBudgetVal(selectedVehicle.monthlyBudget ? String(selectedVehicle.monthlyBudget) : '');
+                }
+              }}
+              style={[styles.odoEditBadge, { backgroundColor: selectedVehicle.color + '15' }]}
+            >
+              <Ionicons name={showBudgetEdit ? "close-circle" : "create-outline"} size={13} color={selectedVehicle.color} style={{ marginRight: 4 }} />
+              <Text style={[styles.odoEditText, { color: selectedVehicle.color }]}>{showBudgetEdit ? t('cancel') : t('edit')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {showBudgetEdit ? (
+            <View style={styles.odoEditRow}>
+              <Input
+                placeholder={selectedVehicle.monthlyBudget ? String(selectedVehicle.monthlyBudget) : (language === 'tr' ? 'Hedef Bütçe girin...' : 'Set budget limit...')}
+                value={budgetVal}
+                onChangeText={setBudgetVal}
+                keyboardType="numeric"
+                style={{ marginBottom: 0, flex: 1, height: 40 }}
+                inputStyle={{ fontSize: 14 }}
+              />
+              <TouchableOpacity style={[styles.odoSaveBtn, { backgroundColor: selectedVehicle.color }]} onPress={handleUpdateBudget}>
+                <Ionicons name="checkmark" size={18} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+          ) : selectedVehicle.monthlyBudget ? (() => {
+              const spent = stats.monthly;
+              const limit = selectedVehicle.monthlyBudget;
+              const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+              
+              let statusColor = '#10B981'; // Green
+              if (percent >= 90) {
+                statusColor = '#EF4444'; // Red
+              } else if (percent >= 70) {
+                statusColor = '#F59E0B'; // Orange
+              }
+
+              const isExceeded = spent > limit;
+              const diff = Math.abs(limit - spent);
+
+              return (
+                <View style={styles.budgetBody}>
+                  <View style={styles.budgetRow}>
+                    <Text style={styles.budgetValue}>
+                      {getCurrencySymbol()}{spent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      <Text style={styles.budgetLimit}> / {getCurrencySymbol()}{limit.toLocaleString()}</Text>
+                    </Text>
+                    <Text style={[styles.budgetPercentText, { color: statusColor }]}>
+                      {language === 'tr' ? '%' : ''}{percent.toFixed(0)}{language === 'tr' ? '' : '%'}
+                    </Text>
+                  </View>
+                  
+                  {/* Progress Bar */}
+                  <View style={styles.budgetBarBg}>
+                    <View style={[styles.budgetBarFill, { width: `${percent}%`, backgroundColor: statusColor }]} />
+                  </View>
+
+                  <Text style={[styles.budgetSubText, { color: isExceeded ? '#EF4444' : currentColors.textMuted }]}>
+                    <Ionicons name={isExceeded ? "alert-circle" : "checkmark-circle"} size={12} color={isExceeded ? '#EF4444' : statusColor} />
+                    {' '}
+                    {isExceeded 
+                      ? (language === 'tr' ? `Bütçe limitinizi ${getCurrencySymbol()}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })} aştınız!` : `Exceeded budget limit by ${getCurrencySymbol()}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })}!`)
+                      : (language === 'tr' ? `Kalan aylık limitiniz: ${getCurrencySymbol()}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `Remaining limit: ${getCurrencySymbol()}${diff.toLocaleString(undefined, { maximumFractionDigits: 0 })}`)}
+                  </Text>
+                </View>
+              );
+            })() : (
+              <View style={styles.budgetEmptyContainer}>
+                <Text style={styles.budgetEmptyText}>
+                  {language === 'tr' 
+                    ? 'Bu araç için henüz aylık harcama limiti belirlemediniz. Bütçenizi kontrol altında tutmak için şimdi bir limit belirleyin.' 
+                    : 'You haven\'t set a monthly spending limit for this vehicle. Set a limit now to keep your expenses in check.'}
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.budgetSetBtn, { borderColor: selectedVehicle.color }]} 
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    setShowBudgetEdit(true);
+                  }}
+                >
+                  <Text style={[styles.budgetSetBtnText, { color: selectedVehicle.color }]}>
+                    {language === 'tr' ? 'Limit Belirle' : 'Set Limit'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+        </Card>
 
         {/* Full Width Odometer Card */}
         <Card style={[styles.odoCard, { borderColor: currentColors.info + '30', borderWidth: 1, marginBottom: 20 }]}>
@@ -812,6 +939,68 @@ const getStyles = (theme: 'dark' | 'light') => {
       fontSize: 14,
       fontWeight: '800',
       color: colors.textPrimary,
+    },
+    budgetBody: {
+      marginTop: 8,
+    },
+    budgetRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginBottom: 8,
+    },
+    budgetValue: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.textPrimary,
+    },
+    budgetLimit: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textSecondary,
+    },
+    budgetPercentText: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    budgetBarBg: {
+      height: 8,
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#E2E8F0',
+      borderRadius: 4,
+      overflow: 'hidden',
+      marginBottom: 10,
+    },
+    budgetBarFill: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    budgetSubText: {
+      fontSize: 11,
+      fontWeight: '600',
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    budgetEmptyContainer: {
+      marginTop: 6,
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    budgetEmptyText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 12,
+    },
+    budgetSetBtn: {
+      borderWidth: 1.5,
+      borderRadius: 8,
+      paddingVertical: 6,
+      paddingHorizontal: 16,
+    },
+    budgetSetBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
     },
   });
   return memoizedStyles;

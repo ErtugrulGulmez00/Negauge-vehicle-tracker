@@ -9,6 +9,7 @@ export interface Vehicle {
   year?: number;
   imageUri?: string;
   isElectric?: boolean;
+  monthlyBudget?: number;
 }
 
 export type ExpenseCategory = 'fuel' | 'maintenance' | 'tax' | 'insurance' | 'wash' | 'fine' | 'parking' | 'other';
