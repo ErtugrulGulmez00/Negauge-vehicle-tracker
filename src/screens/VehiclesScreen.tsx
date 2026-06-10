@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Animated, Modal, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVehicles } from '../context/VehicleContext';
 import { DARK_COLORS, LIGHT_COLORS } from '../theme/colors';
@@ -29,6 +29,49 @@ export const VehiclesScreen: React.FC = () => {
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
   const [selectedCatalogBrand, setSelectedCatalogBrand] = useState<CatalogBrand | null>(null);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
+  const [onlineSearchError, setOnlineSearchError] = useState('');
+
+  const handleSearchOnline = async (query: string) => {
+    if (!query) return;
+    setIsSearchingOnline(true);
+    setOnlineSearchError('');
+    try {
+      const response = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(query)}?format=json`);
+      const data = await response.json();
+      
+      if (data && data.Results && data.Results.length > 0) {
+        const rawModels = data.Results.map((r: any) => r.Model_Name as string);
+        const uniqueModels = Array.from(new Set(rawModels)).sort() as string[];
+        const officialMake = data.Results[0].Make_Name || query.toUpperCase();
+        
+        const isMoto = query.toLowerCase().includes('moto') || 
+                       query.toLowerCase().includes('yamaha') || 
+                       query.toLowerCase().includes('honda') || 
+                       query.toLowerCase().includes('kawasaki') || 
+                       query.toLowerCase().includes('ktm') || 
+                       query.toLowerCase().includes('vespa');
+
+        const onlineBrand: CatalogBrand = {
+          name: officialMake,
+          type: isMoto ? 'motorcycle' : 'car',
+          models: uniqueModels,
+        };
+        
+        setSelectedCatalogBrand(onlineBrand);
+        setCatalogSearch('');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      } else {
+        setOnlineSearchError(language === 'tr' ? 'Aradığınız marka bulunamadı.' : 'Brand not found.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+      }
+    } catch (error) {
+      setOnlineSearchError(language === 'tr' ? 'Bağlantı hatası oluştu.' : 'Connection error occurred.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    } finally {
+      setIsSearchingOnline(false);
+    }
+  };
 
   const handleEditClick = (vehicle: Vehicle) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -428,6 +471,34 @@ export const VehiclesScreen: React.FC = () => {
                   <Ionicons name="chevron-forward" size={16} color={currentColors.textMuted} />
                 </TouchableOpacity>
               )}
+              ListFooterComponent={() => {
+                if (!catalogSearch.trim()) return null;
+                return (
+                  <View style={styles.onlineSearchFooter}>
+                    {isSearchingOnline ? (
+                      <View style={styles.onlineSearchStatus}>
+                        <ActivityIndicator color={currentColors.primary} size="small" style={{ marginRight: 8 }} />
+                        <Text style={[styles.onlineSearchText, { color: currentColors.textSecondary }]}>
+                          {language === 'tr' ? 'İnternette aranıyor...' : 'Searching online...'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.onlineSearchBtn}
+                        onPress={() => handleSearchOnline(catalogSearch.trim())}
+                      >
+                        <Ionicons name="earth" size={18} color={currentColors.primary} style={{ marginRight: 8 }} />
+                        <Text style={styles.onlineSearchBtnText}>
+                          {language === 'tr' ? `İnternette "${catalogSearch}" ara...` : `Search "${catalogSearch}" online...`}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {onlineSearchError ? (
+                      <Text style={styles.onlineSearchErrorText}>{onlineSearchError}</Text>
+                    ) : null}
+                  </View>
+                );
+              }}
             />
           ) : (
             <FlatList
@@ -719,6 +790,44 @@ const getStyles = (theme: 'dark' | 'light') => {
       fontSize: 15,
       fontWeight: '700',
       color: colors.textPrimary,
+    },
+    onlineSearchFooter: {
+      paddingVertical: 20,
+      alignItems: 'center',
+    },
+    onlineSearchStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+    },
+    onlineSearchText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    onlineSearchBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme === 'dark' ? '#1E293B' : '#F1F5F9',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      width: '100%',
+    },
+    onlineSearchBtnText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    onlineSearchErrorText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.danger,
+      marginTop: 10,
+      textAlign: 'center',
     },
   });
   return memoizedStyles;
