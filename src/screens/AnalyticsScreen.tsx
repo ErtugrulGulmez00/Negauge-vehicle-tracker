@@ -270,9 +270,15 @@ export const AnalyticsScreen: React.FC = () => {
             {/* Fuel consumption and efficiency analysis */}
             <Card style={[styles.chartCard, { marginTop: 16 }]}>
               <View style={styles.fuelHeaderRow}>
-                <Ionicons name="speedometer-outline" size={20} color={selectedVehicle.color} />
+                <Ionicons 
+                  name={selectedVehicle.isElectric ? "flash-outline" : "speedometer-outline"} 
+                  size={20} 
+                  color={selectedVehicle.color} 
+                />
                 <Text style={[styles.chartTitle, { marginLeft: 8, marginBottom: 0 }]}>
-                  {language === 'tr' ? 'Yakıt Verimliliği & Tüketim' : 'Fuel Efficiency & Consumption'}
+                  {selectedVehicle.isElectric
+                    ? (language === 'tr' ? 'Şarj Verimliliği & Enerji Tüketimi' : 'Charging Efficiency & Energy')
+                    : (language === 'tr' ? 'Yakıt Verimliliği & Tüketim' : 'Fuel Efficiency & Consumption')}
                 </Text>
               </View>
               
@@ -280,21 +286,29 @@ export const AnalyticsScreen: React.FC = () => {
                 <View style={styles.fuelStatsContent}>
                   <View style={styles.fuelAvgRow}>
                     <Text style={styles.fuelAvgVal}>{fuelStats.avgConsumption}</Text>
-                    <Text style={styles.fuelAvgUnit}> L/100km</Text>
+                    <Text style={styles.fuelAvgUnit}> {selectedVehicle.isElectric ? 'kWh/100km' : 'L/100km'}</Text>
                   </View>
                   <Text style={styles.fuelSubText}>
-                    {language === 'tr' 
-                      ? `En az 2 yakıt dolumu temel alınarak, son ${fuelStats.totalDistance} KM boyunca tüketilen toplam ${fuelStats.totalLiters} litre yakıt ile hesaplanmıştır.` 
-                      : `Calculated from total ${fuelStats.totalLiters} liters filled over the last ${fuelStats.totalDistance} KM using at least 2 fuel fill-ups.`}
+                    {selectedVehicle.isElectric
+                      ? (language === 'tr' 
+                        ? `En az 2 şarj dolumu temel alınarak, son ${fuelStats.totalDistance} KM boyunca tüketilen toplam ${fuelStats.totalLiters} kWh enerji ile hesaplanmıştır.` 
+                        : `Calculated from total ${fuelStats.totalLiters} kWh charged over the last ${fuelStats.totalDistance} KM using at least 2 charging sessions.`)
+                      : (language === 'tr' 
+                        ? `En az 2 yakıt dolumu temel alınarak, son ${fuelStats.totalDistance} KM boyunca tüketilen toplam ${fuelStats.totalLiters} litre yakıt ile hesaplanmıştır.` 
+                        : `Calculated from total ${fuelStats.totalLiters} liters filled over the last ${fuelStats.totalDistance} KM using at least 2 fuel fill-ups.`)}
                   </Text>
                 </View>
               ) : (
                 <View style={styles.fuelEmptyContent}>
                   <Ionicons name="information-circle-outline" size={32} color={currentColors.textMuted} style={{ marginBottom: 6 }} />
                   <Text style={styles.fuelEmptyText}>
-                    {language === 'tr' 
-                      ? 'Yakıt tüketim verilerini görmek için "Litre" miktarını da belirterek en az 2 yakıt harcaması kaydetmelisiniz.' 
-                      : 'Log at least 2 fuel expenses with liters specified to see fuel consumption stats.'}
+                    {selectedVehicle.isElectric
+                      ? (language === 'tr' 
+                        ? 'Şarj tüketim verilerini görmek için "kWh" miktarını da belirterek en az 2 şarj harcaması kaydetmelisiniz.' 
+                        : 'Log at least 2 charging expenses with kWh specified to see energy consumption stats.')
+                      : (language === 'tr' 
+                        ? 'Yakıt tüketim verilerini görmek için "Litre" miktarını da belirterek en az 2 yakıt harcaması kaydetmelisiniz.' 
+                        : 'Log at least 2 fuel expenses with liters specified to see fuel consumption stats.')}
                   </Text>
                 </View>
               )}

@@ -50,7 +50,14 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
   const currentColors = theme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
   const categories: { type: ExpenseCategory; label: string; icon: string; color: string }[] = [
-    { type: 'fuel', label: t('cat_fuel'), icon: 'speedometer-outline', color: currentColors.primary },
+    { 
+      type: 'fuel', 
+      label: selectedVehicle?.isElectric 
+        ? (language === 'tr' ? 'Şarj (Elektrik)' : 'Charging (EV)') 
+        : t('cat_fuel'), 
+      icon: selectedVehicle?.isElectric ? 'flash-outline' : 'speedometer-outline', 
+      color: selectedVehicle?.isElectric ? '#10B981' : currentColors.primary 
+    },
     { type: 'maintenance', label: t('cat_maintenance'), icon: 'construct-outline', color: currentColors.info },
     { type: 'insurance', label: t('cat_insurance'), icon: 'shield-checkmark-outline', color: '#8B5CF6' },
     { type: 'tax', label: t('cat_tax'), icon: 'receipt-outline', color: '#EC4899' },
@@ -88,7 +95,9 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
     
     if (category === 'fuel' && liters.trim()) {
       if (isNaN(Number(liters)) || Number(liters) <= 0) {
-        newErrors.liters = language === 'tr' ? 'Litre miktarı sıfırdan büyük olmalıdır.' : 'Liters must be greater than zero.';
+        newErrors.liters = selectedVehicle?.isElectric
+          ? (language === 'tr' ? 'Şarj miktarı (kWh) sıfırdan büyük olmalıdır.' : 'Charged energy (kWh) must be greater than zero.')
+          : (language === 'tr' ? 'Litre miktarı sıfırdan büyük olmalıdır.' : 'Liters must be greater than zero.');
       }
     }
     
@@ -213,11 +222,15 @@ export const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ onSuccess, e
             error={errors.odometer}
           />
 
-          {/* Liters Input (Only for fuel category) */}
+          {/* Liters/kWh Input (Only for fuel category) */}
           {category === 'fuel' && (
             <Input
-              label={language === 'tr' ? 'Alınan Litre (İsteğe Bağlı)' : 'Liters Filled (Optional)'}
-              placeholder="Örn: 45.5"
+              label={
+                selectedVehicle?.isElectric
+                  ? (language === 'tr' ? 'Şarj Miktarı (kWh - İsteğe Bağlı)' : 'Charged Energy (kWh - Optional)')
+                  : (language === 'tr' ? 'Alınan Litre (İsteğe Bağlı)' : 'Liters Filled (Optional)')
+              }
+              placeholder={selectedVehicle?.isElectric ? 'Örn: 42.5' : 'Örn: 45.5'}
               value={liters}
               onChangeText={setLiters}
               keyboardType="numeric"

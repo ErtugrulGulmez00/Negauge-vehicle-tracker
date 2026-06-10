@@ -8,6 +8,7 @@ export interface Vehicle {
   currentOdometer: number;
   year?: number;
   imageUri?: string;
+  isElectric?: boolean;
 }
 
 export type ExpenseCategory = 'fuel' | 'maintenance' | 'tax' | 'insurance' | 'wash' | 'fine' | 'parking' | 'other';

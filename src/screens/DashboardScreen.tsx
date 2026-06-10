@@ -23,7 +23,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onEditExpensePress,
   onNavigateToVehicles,
 }) => {
-  const { selectedVehicle, expenses, deleteExpense, updateVehicle, theme } = useVehicles();
+  const { selectedVehicle, expenses, deleteExpense, updateVehicle, language, theme } = useVehicles();
   const [quickOdo, setQuickOdo] = useState('');
   const [showOdoEdit, setShowOdoEdit] = useState(false);
 
@@ -69,12 +69,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       
       if (dist > 0 && current.liters && current.liters > 0) {
         const consumption = (current.liters / dist) * 100;
-        map[current.id] = `${consumption.toFixed(1)} L/100km`;
+        map[current.id] = selectedVehicle?.isElectric
+          ? `${consumption.toFixed(1)} kWh/100km`
+          : `${consumption.toFixed(1)} L/100km`;
       }
     }
     
     return map;
-  }, [vehicleExpenses]);
+  }, [vehicleExpenses, selectedVehicle]);
 
   // Calculations
   const stats = useMemo(() => {
@@ -327,18 +329,26 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               return (
                 <Card key={item.id} style={styles.expenseItem}>
                   <View style={styles.expenseLeft}>
-                    <View style={[styles.categoryIcon, { backgroundColor: cat.color + '15' }]}>
-                      <Ionicons name={cat.icon as any} size={18} color={cat.color} />
+                    <View style={[styles.categoryIcon, { backgroundColor: (item.category === 'fuel' && selectedVehicle?.isElectric ? '#10B981' : cat.color) + '15' }]}>
+                      <Ionicons 
+                        name={(item.category === 'fuel' && selectedVehicle?.isElectric ? 'flash-outline' : cat.icon) as any} 
+                        size={18} 
+                        color={item.category === 'fuel' && selectedVehicle?.isElectric ? '#10B981' : cat.color} 
+                      />
                     </View>
                     <View style={styles.expenseDetails}>
-                      <Text style={styles.expenseLabelText}>{cat.label}</Text>
+                      <Text style={styles.expenseLabelText}>
+                        {item.category === 'fuel' && selectedVehicle?.isElectric
+                          ? (language === 'tr' ? 'Şarj (Elektrik)' : 'Charging (EV)')
+                          : cat.label}
+                      </Text>
                       {item.notes ? (
                         <Text style={styles.expenseNotes} numberOfLines={1}>
                           {item.notes}
                         </Text>
                       ) : null}
                       <Text style={styles.expenseMeta}>
-                        {item.date} • {item.odometer.toLocaleString()} KM{item.category === 'fuel' && item.liters ? ` • ${item.liters} Lt` : ''}{fuelConsumptions[item.id] ? ` • ${fuelConsumptions[item.id]}` : ''}
+                        {item.date} • {item.odometer.toLocaleString()} KM{item.category === 'fuel' && item.liters ? ` • ${item.liters} ${selectedVehicle?.isElectric ? 'kWh' : 'Lt'}` : ''}{fuelConsumptions[item.id] ? ` • ${fuelConsumptions[item.id]}` : ''}
                       </Text>
                     </View>
                   </View>

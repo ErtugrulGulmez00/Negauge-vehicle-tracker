@@ -44,6 +44,7 @@ export const VehiclesScreen: React.FC = () => {
   const [plate, setPlate] = useState('');
   const [year, setYear] = useState('');
   const [odometer, setOdometer] = useState('');
+  const [isElectric, setIsElectric] = useState(false);
   const [selectedColor, setSelectedColor] = useState(theme === 'dark' ? DARK_COLORS.vehicleColors[0] : LIGHT_COLORS.vehicleColors[0]);
   const [selectedIcon, setSelectedIcon] = useState('car');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -208,6 +209,7 @@ export const VehiclesScreen: React.FC = () => {
     setPlate(vehicle.plate || '');
     setYear(vehicle.year ? String(vehicle.year) : '');
     setOdometer(String(vehicle.initialOdometer));
+    setIsElectric(vehicle.isElectric || false);
     setSelectedColor(vehicle.color);
     setSelectedIcon(vehicle.icon);
     setImageUri(vehicle.imageUri || null);
@@ -282,7 +284,11 @@ export const VehiclesScreen: React.FC = () => {
     // 2. Fuel Log & Efficiency
     const fuelExpenses = vehicleExpenses.filter(e => e.category === 'fuel');
     if (fuelExpenses.length > 0) {
-      reportText += language === 'tr' ? `⛽ YAKIT ALIM GEÇMİŞİ\n` : `⛽ FUEL LOG & EFFICIENCY\n`;
+      if (vehicle.isElectric) {
+        reportText += language === 'tr' ? `⚡ ŞARJ DOLUM GEÇMİŞİ\n` : `⚡ CHARGING & ENERGY HISTORY\n`;
+      } else {
+        reportText += language === 'tr' ? `⛽ YAKIT ALIM GEÇMİŞİ\n` : `⛽ FUEL LOG & EFFICIENCY\n`;
+      }
       reportText += `---------------------------------\n`;
       
       const sortedFuelAsc = [...fuelExpenses].sort((a, b) => a.odometer - b.odometer);
@@ -292,13 +298,14 @@ export const VehiclesScreen: React.FC = () => {
         const prev = sortedFuelAsc[i - 1];
         const dist = cur.odometer - prev.odometer;
         if (dist > 0 && cur.liters && cur.liters > 0) {
-          fuelConsMap[cur.id] = `(${((cur.liters / dist) * 100).toFixed(1)} L/100km)`;
+          const unitStr = vehicle.isElectric ? 'kWh/100km' : 'L/100km';
+          fuelConsMap[cur.id] = `(${((cur.liters / dist) * 100).toFixed(1)} ${unitStr})`;
         }
       }
       
       [...fuelExpenses].sort((a, b) => b.date.localeCompare(a.date)).forEach(e => {
         const consStr = fuelConsMap[e.id] ? ` | ${fuelConsMap[e.id]}` : '';
-        const literStr = e.liters ? ` | ${e.liters} Lt` : '';
+        const literStr = e.liters ? ` | ${e.liters} ${vehicle.isElectric ? 'kWh' : 'Lt'}` : '';
         reportText += `• ${e.date} | ${e.odometer.toLocaleString()} KM${literStr} | ${currency}${e.amount.toLocaleString()}${consStr}${e.notes ? `\n  ${language === 'tr' ? 'Not' : 'Note'}: ${e.notes}` : ''}\n`;
       });
       reportText += `\n`;
@@ -374,6 +381,7 @@ export const VehiclesScreen: React.FC = () => {
         initialOdometer: Number(odometer),
         currentOdometer: Math.max(vehicleToEdit.currentOdometer, Number(odometer)),
         imageUri: imageUri || undefined,
+        isElectric,
       });
     } else {
       await addVehicle(
@@ -383,7 +391,8 @@ export const VehiclesScreen: React.FC = () => {
         selectedIcon,
         year ? Number(year) : 0,
         Number(odometer),
-        imageUri || undefined
+        imageUri || undefined,
+        isElectric
       );
     }
 
@@ -392,6 +401,7 @@ export const VehiclesScreen: React.FC = () => {
     setPlate('');
     setYear('');
     setOdometer('');
+    setIsElectric(false);
     setSelectedColor(currentColors.vehicleColors[0]);
     setSelectedIcon('car');
     setImageUri(null);
@@ -456,6 +466,7 @@ export const VehiclesScreen: React.FC = () => {
                     setPlate('');
                     setYear('');
                     setOdometer('');
+                    setIsElectric(false);
                     setSelectedColor(currentColors.vehicleColors[0]);
                     setSelectedIcon('car');
                     setImageUri(null);
@@ -516,6 +527,52 @@ export const VehiclesScreen: React.FC = () => {
               keyboardType="numeric"
               error={errors.odometer}
             />
+
+            {/* Fuel / Engine Type Selection */}
+            <Text style={styles.sectionLabel}>{language === 'tr' ? 'Motor / Yakıt Tipi' : 'Engine / Fuel Type'}</Text>
+            <View style={styles.fuelTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.fuelTypeButton,
+                  !isElectric && { borderColor: selectedColor, backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9', borderWidth: 2 },
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  setIsElectric(false);
+                }}
+              >
+                <Ionicons name="speedometer-outline" size={18} color={!isElectric ? selectedColor : currentColors.textMuted} />
+                <Text
+                  style={[
+                    styles.fuelTypeText,
+                    !isElectric ? { color: currentColors.textPrimary, fontWeight: '700' } : { color: currentColors.textSecondary },
+                  ]}
+                >
+                  {language === 'tr' ? 'İçten Yanmalı (Benzin/Dizel/LPG)' : 'Combustion (Gas/Diesel/LPG)'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.fuelTypeButton,
+                  isElectric && { borderColor: selectedColor, backgroundColor: theme === 'dark' ? '#0F172A' : '#F1F5F9', borderWidth: 2 },
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  setIsElectric(true);
+                }}
+              >
+                <Ionicons name="flash-outline" size={18} color={isElectric ? selectedColor : currentColors.textMuted} />
+                <Text
+                  style={[
+                    styles.fuelTypeText,
+                    isElectric ? { color: currentColors.textPrimary, fontWeight: '700' } : { color: currentColors.textSecondary },
+                  ]}
+                >
+                  {language === 'tr' ? 'Elektrikli (EV / Şarj)' : 'Electric (EV / Charging)'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Icon Selection */}
             <Text style={styles.sectionLabel}>{t('v_type')}</Text>
@@ -908,6 +965,25 @@ const getStyles = (theme: 'dark' | 'light') => {
     iconText: {
       fontSize: 12,
       marginLeft: 8,
+    },
+    fuelTypeContainer: {
+      flexDirection: 'column',
+      marginBottom: 20,
+    },
+    fuelTypeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 48,
+      backgroundColor: theme === 'dark' ? '#0F172A40' : '#F1F5F940',
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+    },
+    fuelTypeText: {
+      fontSize: 13,
+      marginLeft: 10,
     },
     colorContainer: {
       flexDirection: 'row',
